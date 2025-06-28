@@ -17,7 +17,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
-        // Native build configuration
+        // Native build configuration - using available NDK
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
@@ -43,17 +43,17 @@ android {
         compose = true
     }
     
-    // Native build configuration - flexible for cloud environments
+    // Native build configuration - using available NDK version
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            // More flexible version requirement for cloud compatibility
+            // Using flexible version for cloud environment
             version = "3.10.2"
         }
     }
     
-    // Use a more recent NDK version that's available in cloud environments
-    ndkVersion = "25.1.8937393"
+    // Use the available NDK version from the cloud environment
+    ndkVersion = "21.4.7075529"
 }
 
 dependencies {

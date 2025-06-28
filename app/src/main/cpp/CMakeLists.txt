@@ -1,4 +1,6 @@
-# More flexible CMake version requirement for cloud environments
+# Minimal CMake configuration for Android NDK
+# This should work with the Android Gradle Plugin's built-in CMake support
+
 cmake_minimum_required(VERSION 3.10.2)
 
 project("stplayer")
@@ -6,7 +8,7 @@ project("stplayer")
 # Set the native library name
 set(LIBRARY_NAME "whispercpp")
 
-# Create the shared library
+# Create the shared library with minimal configuration
 add_library(${LIBRARY_NAME} SHARED
     whispercpp/whisper_jni.cpp
 )
