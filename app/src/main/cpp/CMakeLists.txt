@@ -1,7 +1,7 @@
-# Minimal CMake configuration for Android NDK
-# This should work with the Android Gradle Plugin's built-in CMake support
+# CMake configuration for Android NDK with Whisper.cpp integration
+# Optimized for CMake 3.28.3 and NDK 21.4.7075529
 
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.28.3)
 
 project("stplayer")
 
@@ -36,16 +36,20 @@ target_include_directories(${LIBRARY_NAME} PRIVATE
     # TODO: Add Whisper.cpp include directories when integrated
 )
 
-# Compiler flags
+# Compiler flags optimized for Android
 target_compile_options(${LIBRARY_NAME} PRIVATE
     -Wall
     -Wextra
     -O2
-    # TODO: Add platform-specific flags for ARM64/x86 when needed
+    -fPIC
+    # Platform-specific optimizations
+    $<$<AND:$<CONFIG:Release>,$<STREQUAL:${ANDROID_ABI},arm64-v8a>>:-march=armv8-a>
+    $<$<AND:$<CONFIG:Release>,$<STREQUAL:${ANDROID_ABI},x86_64>>:-march=x86-64>
 )
 
 # Set C++ standard
 set_target_properties(${LIBRARY_NAME} PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
 ) 

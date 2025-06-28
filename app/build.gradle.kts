@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.taazali.stplayer"
-    compileSdk = 35
+    compileSdk = 33
 
     defaultConfig {
         applicationId = "com.taazali.stplayer"
         minSdk = 21
-        targetSdk = 35
+        targetSdk = 33
         versionCode = 1
         versionName = "1.0"
 
@@ -47,8 +47,8 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            // Using flexible version for cloud environment
-            version = "3.10.2"
+            // Using the newly installed CMake 3.28.3
+            version = "3.28.3"
         }
     }
     
