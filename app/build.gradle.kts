@@ -43,15 +43,17 @@ android {
         compose = true
     }
     
-    // Native build configuration
+    // Native build configuration - flexible for cloud environments
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.18.1"
+            // More flexible version requirement for cloud compatibility
+            version = "3.10.2"
         }
     }
     
-    ndkVersion = "21.4.7075529"
+    // Use a more recent NDK version that's available in cloud environments
+    ndkVersion = "25.1.8937393"
 }
 
 dependencies {

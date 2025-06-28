@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.18.1)
+# More flexible CMake version requirement for cloud environments
+cmake_minimum_required(VERSION 3.10.2)
 
 project("stplayer")
 

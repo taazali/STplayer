@@ -134,23 +134,31 @@ fun VideoPlayerSection(
         
         // Initialize Whisper model
         println("🔧 [MAIN] Initializing Whisper transcription...")
-        val modelName = "ggml-base.en.bin" // Small English model
-        val modelAvailable = whisperBridge.isModelAvailable(context, modelName)
-        
-        if (modelAvailable) {
-            val modelSize = whisperBridge.getModelSize(context, modelName)
-            println("✅ [MAIN] Whisper model available: $modelName (${modelSize} bytes)")
+        try {
+            val modelName = "ggml-base.en.bin" // Small English model
+            val modelAvailable = whisperBridge.isModelAvailable(context, modelName)
             
-            val success = whisperBridge.initializeModel(context, modelName)
-            if (success) {
-                println("✅ [MAIN] Whisper model initialized successfully")
-                whisperBridge.setParameters("en", "transcribe")
+            if (modelAvailable) {
+                val modelSize = whisperBridge.getModelSize(context, modelName)
+                println("✅ [MAIN] Whisper model available: $modelName (${modelSize} bytes)")
+                
+                val success = whisperBridge.initializeModel(context, modelName)
+                if (success) {
+                    println("✅ [MAIN] Whisper model initialized successfully")
+                    whisperBridge.setParameters("en", "transcribe")
+                } else {
+                    println("❌ [MAIN] Failed to initialize Whisper model")
+                }
             } else {
-                println("❌ [MAIN] Failed to initialize Whisper model")
+                println("❌ [MAIN] Whisper model not available: $modelName")
+                println("🔧 [MAIN] Available models: ${whisperBridge.getAvailableModels(context)}")
             }
-        } else {
-            println("❌ [MAIN] Whisper model not available: $modelName")
-            println("🔧 [MAIN] Available models: ${whisperBridge.getAvailableModels(context)}")
+        } catch (e: UnsatisfiedLinkError) {
+            println("⚠️ [MAIN] Native library not available: ${e.message}")
+            println("🔧 [MAIN] Using fallback transcription for demo")
+        } catch (e: Exception) {
+            println("❌ [MAIN] Whisper initialization error: ${e.message}")
+            println("🔧 [MAIN] Using fallback transcription for demo")
         }
         
         // Initialize ONNX translation model
