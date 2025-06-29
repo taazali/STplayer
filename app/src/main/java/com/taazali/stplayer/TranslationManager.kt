@@ -372,7 +372,7 @@ class TranslationManager(private val context: Context) {
         
         try {
             // Tokenize input text
-            val inputTokens = tokenizer?.encode(text) ?: intArrayOf()
+            val inputTokens = tokenizer?.tokenize(text) ?: intArrayOf()
             println("🔧 [TRANSLATION] Input tokens: ${inputTokens.contentToString()}")
             
             // ONNX temporarily disabled
@@ -547,16 +547,17 @@ class TranslationManager(private val context: Context) {
      */
     fun unloadModel() {
         try {
-            encoderSession?.close()
-            encoderSession = null
-            decoderSession?.close()
-            decoderSession = null
+            // ONNX sessions are temporarily disabled
+            // encoderSession?.close()
+            // decoderSession?.close()
+            // encoderSession = null
+            // decoderSession = null
             tokenizer = null
             
             _isModelLoaded.value = false
             _currentModel.value = null
             
-            println("ONNX models unloaded successfully")
+            println("Translation models unloaded successfully")
             
         } catch (e: Exception) {
             println("Failed to unload models: ${e.message}")
