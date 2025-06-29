@@ -387,6 +387,8 @@ class CustomAudioSink(
     
     override fun isEnded(): Boolean = delegate.isEnded()
     
+    override fun hasPendingData(): Boolean = delegate.hasPendingData()
+    
     override fun handleDiscontinuity(): Unit = delegate.handleDiscontinuity()
     
     override fun setPlaybackParameters(playbackParameters: androidx.media3.common.PlaybackParameters): Unit = delegate.setPlaybackParameters(playbackParameters)
