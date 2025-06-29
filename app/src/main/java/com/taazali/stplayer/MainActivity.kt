@@ -364,8 +364,8 @@ class CustomAudioSink(
         return delegate.handleBuffer(buffer, presentationTimeUs, encodedAccessUnitCount)
     }
     
-    override fun supportsOutput(channelCount: Int, encoding: Int): Boolean {
-        return delegate.supportsOutput(channelCount, encoding)
+    override fun supportsFormat(format: androidx.media3.common.Format): Boolean {
+        return delegate.supportsFormat(format)
     }
     
     override fun getCurrentPositionUs(isSourceEnded: Boolean): Long {
