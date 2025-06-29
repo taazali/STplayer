@@ -1,81 +1,168 @@
 #!/bin/bash
 
-echo "🔍 STplayer Setup Verification"
-echo "=============================="
-
-# Check if we're in the right directory
-if [ ! -f "app/build.gradle.kts" ]; then
-    echo "❌ Not in STplayer root directory"
-    exit 1
-fi
-
-echo "✅ STplayer project structure found"
-
-# Check translation models
+echo "🔍 STplayer Pre-Build Verification Checklist"
+echo "=============================================="
 echo ""
-echo "📁 Translation Models:"
-if [ -f "app/src/main/assets/translation/translation_en_ar_encoder_int8.onnx" ]; then
-    ENCODER_SIZE=$(stat -f%z "app/src/main/assets/translation/translation_en_ar_encoder_int8.onnx")
-    echo "✅ Encoder model: ${ENCODER_SIZE} bytes"
-else
-    echo "❌ Encoder model missing"
-fi
 
-if [ -f "app/src/main/assets/translation/translation_en_ar_decoder_int8.onnx" ]; then
-    DECODER_SIZE=$(stat -f%z "app/src/main/assets/translation/translation_en_ar_decoder_int8.onnx")
-    echo "✅ Decoder model: ${DECODER_SIZE} bytes"
-else
-    echo "❌ Decoder model missing"
-fi
+# 1. Check Model Assets
+echo "📦 1. Checking Model Assets..."
+echo "--------------------------------"
 
-# Check key source files
-echo ""
-echo "📝 Source Files:"
-FILES=(
-    "app/src/main/java/com/taazali/stplayer/MainActivity.kt"
-    "app/src/main/java/com/taazali/stplayer/TranslationManager.kt"
-    "app/src/main/java/com/taazali/stplayer/SubtitleManager.kt"
-    "app/src/main/java/com/taazali/stplayer/WhisperBridge.kt"
-    "app/build.gradle.kts"
-    "gradle/libs.versions.toml"
-    "TESTING_WORKFLOW.md"
-)
-
-for file in "${FILES[@]}"; do
-    if [ -f "$file" ]; then
-        echo "✅ $file"
+echo "Translation models:"
+if [ -d "app/src/main/assets/translation" ]; then
+    ls -lh app/src/main/assets/translation/
+    echo ""
+    
+    # Check specific files
+    if [ -f "app/src/main/assets/translation/translation_en_ar_encoder_int8.onnx" ]; then
+        echo "✅ Encoder model found"
     else
-        echo "❌ $file missing"
+        echo "❌ Encoder model missing"
     fi
-done
-
-# Check ONNX Runtime dependency
-echo ""
-echo "📦 Dependencies:"
-if grep -q "onnxruntime-android" "gradle/libs.versions.toml"; then
-    echo "✅ ONNX Runtime dependency configured"
+    
+    if [ -f "app/src/main/assets/translation/translation_en_ar_decoder_int8.onnx" ]; then
+        echo "✅ Decoder model found"
+    else
+        echo "❌ Decoder model missing"
+    fi
+    
+    # Check file permissions
+    echo ""
+    echo "File permissions:"
+    ls -la app/src/main/assets/translation/
 else
-    echo "❌ ONNX Runtime dependency missing"
+    echo "❌ Translation directory missing"
 fi
 
-if grep -q "onnxruntime" "app/build.gradle.kts"; then
-    echo "✅ ONNX Runtime dependency included in build"
+echo ""
+echo "Whisper models:"
+if [ -d "app/src/main/assets/whisper" ]; then
+    ls -lh app/src/main/assets/whisper/
+    echo ""
+    echo "File permissions:"
+    ls -la app/src/main/assets/whisper/
 else
-    echo "❌ ONNX Runtime dependency not included in build"
+    echo "❌ Whisper directory missing"
 fi
 
 echo ""
-echo "🎯 Ready for Testing:"
-echo "===================="
-echo "1. ✅ Encoder-decoder models in place"
-echo "2. ✅ Source code with verbose logging"
-echo "3. ✅ ONNX Runtime integration"
-echo "4. ✅ Testing workflow documented"
 echo ""
-echo "📋 Next Steps for Shihab:"
-echo "1. Build APK in Android Studio Cloud"
-echo "2. Deploy to Android tablet"
-echo "3. Monitor logs for encoder-decoder pipeline"
-echo "4. Verify translation performance"
+
+# 2. Check NDK, CMake, and Ninja
+echo "🔧 2. Checking Build Tools..."
+echo "-----------------------------"
+
+echo "CMake:"
+if command -v cmake &> /dev/null; then
+    echo "✅ CMake found at: $(which cmake)"
+    cmake --version | head -1
+else
+    echo "❌ CMake not found"
+fi
+
 echo ""
-echo "🚀 Ready to test the complete AI pipeline!" 
+echo "Ninja:"
+if command -v ninja &> /dev/null; then
+    echo "✅ Ninja found at: $(which ninja)"
+    ninja --version
+else
+    echo "❌ Ninja not found"
+fi
+
+echo ""
+echo "NDK:"
+if [ -n "$ANDROID_HOME" ]; then
+    echo "✅ ANDROID_HOME set to: $ANDROID_HOME"
+    if [ -d "$ANDROID_HOME/ndk" ]; then
+        echo "NDK versions available:"
+        ls -la "$ANDROID_HOME/ndk/"
+    else
+        echo "❌ NDK directory not found"
+    fi
+else
+    echo "❌ ANDROID_HOME not set"
+fi
+
+echo ""
+echo ""
+
+# 3. Check Java and Gradle
+echo "☕ 3. Checking Java and Gradle..."
+echo "--------------------------------"
+
+echo "Java:"
+if command -v java &> /dev/null; then
+    echo "✅ Java found at: $(which java)"
+    java -version
+else
+    echo "❌ Java not found"
+fi
+
+echo ""
+echo "Gradle:"
+if [ -f "gradlew" ]; then
+    echo "✅ Gradle wrapper found"
+    ./gradlew --version | head -3
+else
+    echo "❌ Gradle wrapper missing"
+fi
+
+echo ""
+echo ""
+
+# 4. Check Build Configuration
+echo "⚙️ 4. Checking Build Configuration..."
+echo "------------------------------------"
+
+echo "build.gradle.kts syntax check:"
+if ./gradlew projects > /dev/null 2>&1; then
+    echo "✅ Gradle configuration is valid"
+else
+    echo "❌ Gradle configuration has errors"
+fi
+
+echo ""
+echo "Dependencies check:"
+if [ -f "gradle/libs.versions.toml" ]; then
+    echo "✅ Version catalog found"
+else
+    echo "❌ Version catalog missing"
+fi
+
+echo ""
+echo ""
+
+# 5. Check File Permissions
+echo "🔐 5. Checking File Permissions..."
+echo "---------------------------------"
+
+echo "Setting correct permissions for model files..."
+if [ -d "app/src/main/assets/translation" ]; then
+    chmod -R 644 app/src/main/assets/translation/*
+    echo "✅ Translation model permissions set"
+fi
+
+if [ -d "app/src/main/assets/whisper" ]; then
+    chmod -R 644 app/src/main/assets/whisper/*
+    echo "✅ Whisper model permissions set"
+fi
+
+echo ""
+echo ""
+
+# 6. Summary
+echo "📋 6. Verification Summary..."
+echo "-----------------------------"
+
+echo "Ready to build? Check the following:"
+echo ""
+echo "✅ All required models present and readable"
+echo "✅ CMake and Ninja installed and accessible"
+echo "✅ NDK version 21.4.7075529 available"
+echo "✅ Java 17 available"
+echo "✅ Gradle configuration valid"
+echo "✅ File permissions correct"
+echo ""
+
+echo "🚀 If all checks pass, run: ./gradlew clean assembleDebug"
+echo "" 
