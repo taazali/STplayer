@@ -373,6 +373,10 @@ class CustomAudioSink(
         return delegate.getFormatSupport(format)
     }
     
+    override fun configure(format: androidx.media3.common.Format, p1: Int, p2: IntArray?): Unit {
+        delegate.configure(format, p1, p2)
+    }
+    
     override fun getCurrentPositionUs(isSourceEnded: Boolean): Long {
         return delegate.getCurrentPositionUs(isSourceEnded)
     }
