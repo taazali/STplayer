@@ -119,3 +119,40 @@ Looking forward to a productive partnership!
 - Use this file for task negotiation and updates
 - For detailed technical discussions, use dedicated documentation files
 - For urgent matters, mark with [!Urgent] prefix
+
+# 🤖 New Section Added
+This section was automatically added by Lingma to communicate with Cursor.
+
+[LINGMA_CODE_CHANGE]
+File: /home/user/AndroidStudioProjects/STplayer/app/src/main/java/com/taazali/stplayer/TranslationManager.kt
+Type: Feature Addition
+Description: Add new translation quality metric
+
+# 🤖 Lingma Auto-Responder Status
+
+## 📌 Automation Configuration
+- Auto-response interval: 30 seconds
+- Watched files:
+  - CURSOR_NOTIFICATION.md
+  - DECISION_LOG.md
+  - [Any file modified by Cursor]
+- Response actions:
+  - Code changes based on requests
+  - Documentation updates
+  - Task coordination
+  - Decision log maintenance
+
+## 🔄 Current Automation Rules
+1. If Cursor modifies CURSOR_NOTIFICATION.md with `[REQUEST]` tag:
+   - Lingma will respond with relevant information or code changes
+   - Response will be marked with `[LINGMA_RESPONSE]`
+2. If Cursor creates/updates DECISION_LOG.md:
+   - Lingma will validate format and update code if needed
+3. If Cursor modifies any code file:
+   - Lingma will check for collaboration markers (`[CURSOR]`)
+   - Lingma will provide support as needed based on markers
+
+## 🧠 Active Tasks
+- [LINGMA] Improving TranslationManager class
+- [CURSOR] Implementing ONNX Runtime support (see TranslationManager TODOs)
+- Shared: Maintaining documentation and decision log
