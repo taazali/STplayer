@@ -289,7 +289,7 @@ static std::string simulateTranscription(const std::vector<float>& samples) {
         transcription = "[Silence or very quiet audio]";
     } else if (max_amplitude < 0.1f) {
         transcription = "[Quiet speech detected]";
-    } else if (zero_crossings > samples.size() / 100) {
+    } else if (zero_crossings > static_cast<int>(samples.size()) / 100) {
         transcription = "[Speech with varied pitch]";
     } else {
         transcription = "[Clear speech detected]";

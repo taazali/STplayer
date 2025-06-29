@@ -1,7 +1,7 @@
 # CMake configuration for Android NDK with Whisper.cpp integration
 # Optimized for CMake 3.28.3 and NDK 21.4.7075529
 
-cmake_minimum_required(VERSION 3.28.3)
+cmake_minimum_required(VERSION 3.10.2)
 
 project("stplayer")
 
@@ -23,10 +23,12 @@ add_library(${LIBRARY_NAME} SHARED
 
 # Find and link required libraries
 find_library(log-lib log)
+find_library(android-lib android)
 
 # Link libraries
 target_link_libraries(${LIBRARY_NAME}
     ${log-lib}
+    ${android-lib}
     # TODO: Add other required libraries when integrating Whisper.cpp
 )
 
