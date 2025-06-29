@@ -201,50 +201,39 @@ fun VideoPlayerSection(
                     println("❌ [MAIN] Failed to load ONNX single model")
                 }
             } else {
-                println("❌ [MAIN] No translation models available")
-                println("Expected files:")
-                println("  - $encoderModelName")
-                println("  - $decoderModelName")
-                println("  - $singleModelName")
-                println("Available models: ${modelDetection["available_models"]}")
-                println("Using fallback translation for demo")
+                println("❌ [MAIN] No ONNX models found, using fallback translation")
+                val success = translationManager.loadModel(translationModelBaseName, "en", "ar")
+                if (success) {
+                    println("✅ [MAIN] Fallback translation model loaded")
+                } else {
+                    println("❌ [MAIN] Failed to load fallback translation model")
+                }
             }
         }
         
-        println("🔧 [MAIN] Starting audio capture...")
+        // Start audio capture
         audioCaptureManager.startCapture()
+        println("✅ [MAIN] Audio capture started")
         
-        // Set up translation demo (English to Arabic)
-        println("🔧 [MAIN] Configuring subtitle pipeline...")
-        subtitleManager.setSourceLanguage("en")
-        subtitleManager.setTargetLanguage("ar")
-        subtitleManager.setTranslationManager(translationManager)
+        // Start subtitle processing
+        subtitleManager.startProcessing()
+        println("✅ [MAIN] Subtitle processing started")
         
-        // Start subtitle simulation (simulates real-time transcription)
-        println("🔧 [MAIN] Starting subtitle simulation...")
-        coroutineScope.launch {
-            simulateRealTimeSubtitles { subtitle ->
-                // This simulates the complete flow: Audio → Whisper → SubtitleManager → Translation → Display
-                println("🔧 [MAIN] Processing simulated subtitle: '$subtitle'")
-                subtitleManager.processTranscription(subtitle)
-            }
-        }
-        
-        println("✅ [MAIN] STplayer initialization completed")
+        println("🚀 [MAIN] STplayer initialization completed successfully!")
     }
     
-    DisposableEffect(Unit) {
+    // Cleanup on dispose
+    DisposableEffect(exoPlayer) {
         onDispose {
-            audioCaptureManager.stopCapture()
-            subtitleManager.cleanup()
-            whisperBridge.cleanup()
-            translationManager.unloadModel()
             exoPlayer.release()
+            audioCaptureManager.stopCapture()
+            subtitleManager.stopProcessing()
+            println("🧹 [MAIN] STplayer cleanup completed")
         }
     }
     
-    Box(modifier = modifier) {
-        // ExoPlayer View
+    Column(modifier = modifier) {
+        // Video Player
         AndroidView(
             factory = { ctx ->
                 PlayerView(ctx).apply {
@@ -252,179 +241,36 @@ fun VideoPlayerSection(
                     useController = false // We'll use our custom controls
                 }
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
         )
         
-        // Real-time Subtitle Overlay
-        if (subtitleVisible) {
+        // Subtitle Display
+        if (subtitleVisible && currentSubtitle.isNotEmpty()) {
             SubtitleOverlay(
-                text = currentSubtitle,
+                subtitle = currentSubtitle,
                 fontSize = fontSize,
                 outlineEnabled = outlineEnabled,
                 isTranslated = isTranslated,
                 translationCount = translationCount,
-                isTranslationModelLoaded = isTranslationModelLoaded,
-                averageTranslationTime = averageTranslationTime,
                 modifier = Modifier
-                    .align(Alignment.Center)
+                    .fillMaxWidth()
                     .padding(16.dp)
             )
         }
         
         // Translation Status Indicator
-        if (isTranslationModelLoaded) {
-            TranslationStatusIndicator(
-                modelName = currentTranslationModel ?: "Unknown",
-                quality = translationQuality,
-                translationCount = translationStats,
-                averageTime = averageTranslationTime,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-            )
-        }
-        
-        // TODO: Add gesture detection for subtitle controls
-        // TODO: Add JNI/Whisper integration for real-time transcription
-        // TODO: Add ONNX integration for translation
-    }
-}
-
-/**
- * Simulates real-time subtitle generation for testing the UI flow
- * This will be replaced with actual Whisper transcription in the next milestone
- */
-private suspend fun simulateRealTimeSubtitles(onSubtitleUpdate: (String) -> Unit) {
-    val sampleSubtitles = listOf(
-        "Welcome to STplayer!",
-        "This is a real-time subtitle demo.",
-        "Audio is being captured from ExoPlayer.",
-        "Soon this will use actual Whisper transcription.",
-        "Translation features will be added next.",
-        "The subtitle overlay updates dynamically.",
-        "Just like MX Player or other premium apps.",
-        "Built with modern Android technologies."
-    )
-    
-    var index = 0
-    while (true) {
-        onSubtitleUpdate(sampleSubtitles[index % sampleSubtitles.size])
-        delay(3000) // Update every 3 seconds
-        index++
-    }
-}
-
-@Composable
-fun SubtitleOverlay(
-    text: String,
-    fontSize: Int = 18,
-    outlineEnabled: Boolean = true,
-    isTranslated: Boolean = false,
-    translationCount: Int = 0,
-    isTranslationModelLoaded: Boolean = false,
-    averageTranslationTime: Long = 0,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color.Black.copy(alpha = 0.8f))
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = text,
-                color = Color.White,
-                fontSize = fontSize.sp,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            // Show translation indicator
-            if (isTranslated) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "🌐 Translated",
-                        color = Color.Gray,
-                        fontSize = 12.sp
-                    )
-                    if (isTranslationModelLoaded) {
-                        Text(
-                            text = " (ONNX: ${averageTranslationTime}ms)",
-                            color = Color.Green,
-                            fontSize = 12.sp
-                        )
-                    } else {
-                        Text(
-                            text = " (Fallback)",
-                            color = Color.Yellow,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun TranslationStatusIndicator(
-    modelName: String,
-    quality: TranslationQuality,
-    translationCount: Int,
-    averageTime: Long,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Black.copy(alpha = 0.8f)
+        TranslationStatusIndicator(
+            isModelLoaded = isTranslationModelLoaded,
+            translationQuality = translationQuality,
+            currentModel = currentTranslationModel,
+            translationStats = translationStats,
+            averageTranslationTime = averageTranslationTime,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         )
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(
-                text = "🤖 ONNX Translation",
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            Text(
-                text = "Model: ${modelName.replace("translation_", "").replace(".onnx", "")}",
-                color = Color.Gray,
-                fontSize = 12.sp
-            )
-            
-            Text(
-                text = "Quality: $quality",
-                color = Color.Gray,
-                fontSize = 12.sp
-            )
-            
-            Text(
-                text = "Count: $translationCount",
-                color = Color.Gray,
-                fontSize = 12.sp
-            )
-            
-            Text(
-                text = "Avg: ${averageTime}ms",
-                color = if (averageTime < 100) Color.Green else Color.Yellow,
-                fontSize = 12.sp
-            )
-        }
     }
 }
 
@@ -496,9 +342,7 @@ class CustomAudioSink(
     private val subtitleManager: SubtitleManager,
     private val whisperBridge: WhisperBridge,
     private val audioCaptureManager: AudioCaptureManager
-) : AudioSink {
-    
-    private val delegate = DefaultAudioSink.Builder().build()
+) : DefaultAudioSink() {
     
     override fun handleBuffer(
         buffer: ByteBuffer,
@@ -515,56 +359,8 @@ class CustomAudioSink(
             audioCaptureManager.processAudioChunk(subtitleManager, whisperBridge)
         }
         
-        return delegate.handleBuffer(buffer, presentationTimeUs, encodedAccessUnitCount)
+        return super.handleBuffer(buffer, presentationTimeUs, encodedAccessUnitCount)
     }
-    
-    override fun supportsOutput(channelCount: Int, encoding: Int): Boolean {
-        return delegate.supportsOutput(channelCount, encoding)
-    }
-    
-    override fun getCurrentPositionUs(isSourceEnded: Boolean): Long {
-        return delegate.getCurrentPositionUs(isSourceEnded)
-    }
-    
-    override fun play(): Unit = delegate.play()
-    
-    override fun handleDiscontinuity(): Unit = delegate.handleDiscontinuity()
-    
-    override fun setPlaybackParameters(playbackParameters: androidx.media3.common.PlaybackParameters): Unit = delegate.setPlaybackParameters(playbackParameters)
-    
-    override fun getPlaybackParameters(): androidx.media3.common.PlaybackParameters = delegate.playbackParameters
-    
-    override fun setSkipSilenceEnabled(skipSilenceEnabled: Boolean): Unit = delegate.setSkipSilenceEnabled(skipSilenceEnabled)
-    
-    override fun getSkipSilenceEnabled(): Boolean = delegate.skipSilenceEnabled
-    
-    override fun setAudioOffloadMode(audioOffloadMode: androidx.media3.exoplayer.audio.AudioSink.AudioOffloadMode): Unit = delegate.setAudioOffloadMode(audioOffloadMode)
-    
-    override fun getAudioOffloadMode(): androidx.media3.exoplayer.audio.AudioSink.AudioOffloadMode = delegate.audioOffloadMode
-    
-    override fun setListener(listener: androidx.media3.exoplayer.audio.AudioSink.Listener?): Unit = delegate.setListener(listener)
-    
-    override fun setAudioAttributes(audioAttributes: androidx.media3.common.AudioAttributes, handleAudioFocus: Boolean): Unit = delegate.setAudioAttributes(audioAttributes, handleAudioFocus)
-    
-    override fun setAudioSessionId(audioSessionId: Int): Unit = delegate.setAudioSessionId(audioSessionId)
-    
-    override fun setAuxEffectInfo(auxEffectInfo: androidx.media3.common.AuxEffectInfo?): Unit = delegate.setAuxEffectInfo(auxEffectInfo)
-    
-    override fun setPreferredDevice(preferredDevice: android.media.AudioDeviceInfo?): Unit = delegate.setPreferredDevice(preferredDevice)
-    
-    override fun setVolume(volume: Float): Unit = delegate.setVolume(volume)
-    
-    override fun pause(): Unit = delegate.pause()
-    
-    override fun flush(): Unit = delegate.flush()
-    
-    override fun reset(): Unit = delegate.reset()
-    
-    override fun setWakeupListener(wakeupListener: androidx.media3.exoplayer.audio.AudioSink.WakeupListener?): Unit = delegate.setWakeupListener(wakeupListener)
-    
-    override fun setOffloadMode(offloadMode: androidx.media3.exoplayer.audio.AudioSink.OffloadMode): Unit = delegate.setOffloadMode(offloadMode)
-    
-    override fun getOffloadMode(): androidx.media3.exoplayer.audio.AudioSink.OffloadMode = delegate.offloadMode
 }
 
 @Composable
@@ -620,6 +416,117 @@ class VideoPlayerViewModel {
     // TODO: Add video state management
     // TODO: Add subtitle state management
     // TODO: Add transcription/translation state management
+}
+
+@Composable
+fun SubtitleOverlay(
+    subtitle: String,
+    fontSize: Int = 18,
+    outlineEnabled: Boolean = true,
+    isTranslated: Boolean = false,
+    translationCount: Int = 0,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black.copy(alpha = 0.8f))
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = subtitle,
+                color = Color.White,
+                fontSize = fontSize.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            // Show translation indicator
+            if (isTranslated) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "🌐 Translated",
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = " (Count: $translationCount)",
+                        color = Color.Green,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TranslationStatusIndicator(
+    isModelLoaded: Boolean,
+    translationQuality: TranslationQuality,
+    currentModel: String?,
+    translationStats: Int,
+    averageTranslationTime: Long,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Black.copy(alpha = 0.8f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Text(
+                text = "🤖 ONNX Translation",
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Text(
+                text = "Model: ${currentModel?.replace("translation_", "")?.replace(".onnx", "") ?: "None"}",
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
+            
+            Text(
+                text = "Quality: $translationQuality",
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
+            
+            Text(
+                text = "Count: $translationStats",
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
+            
+            Text(
+                text = "Avg: ${averageTranslationTime}ms",
+                color = if (averageTranslationTime < 100) Color.Green else Color.Yellow,
+                fontSize = 12.sp
+            )
+            
+            Text(
+                text = "Status: ${if (isModelLoaded) "✅ Loaded" else "❌ Not Loaded"}",
+                color = if (isModelLoaded) Color.Green else Color.Red,
+                fontSize = 12.sp
+            )
+        }
+    }
 }
 
 // TODO: Handle external video player intents (e.g., from Stremio/Torrentio)

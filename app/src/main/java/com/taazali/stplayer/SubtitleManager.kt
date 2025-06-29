@@ -154,7 +154,7 @@ class SubtitleManager(context: Context) {
         // TODO: Add translation quality checks
         // TODO: Add fallback to original text if translation fails
         
-        val translatedText = translationManager?.translateText(originalText, sourceLanguage, targetLanguage) ?: originalText
+        val translatedText = translationManager?.translate(originalText, sourceLanguage, targetLanguage) ?: originalText
         
         println("✅ [SUBTITLE] Translation result: '$translatedText'")
         updateSubtitle(translatedText)
@@ -251,6 +251,25 @@ class SubtitleManager(context: Context) {
      */
     fun cleanup() {
         translationManager?.unloadModel()
+    }
+    
+    /**
+     * Start subtitle processing
+     */
+    fun startProcessing() {
+        println("🔧 [SUBTITLE] Starting subtitle processing...")
+        _subtitleVisible.value = true
+        println("✅ [SUBTITLE] Subtitle processing started")
+    }
+    
+    /**
+     * Stop subtitle processing
+     */
+    fun stopProcessing() {
+        println("🔧 [SUBTITLE] Stopping subtitle processing...")
+        _subtitleVisible.value = false
+        _currentSubtitle.value = ""
+        println("✅ [SUBTITLE] Subtitle processing stopped")
     }
     
     companion object {

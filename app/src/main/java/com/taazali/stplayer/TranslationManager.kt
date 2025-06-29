@@ -13,7 +13,7 @@ import java.nio.ByteOrder
 import java.nio.IntBuffer
 import java.nio.LongBuffer
 import java.util.concurrent.atomic.AtomicLong
-import com.microsoft.onnxruntime.*
+// import com.microsoft.onnxruntime.*
 
 /**
  * Manages ONNX-based translation for real-time subtitle translation
@@ -43,10 +43,10 @@ class TranslationManager(private val context: Context) {
     private val _averageTranslationTime = MutableStateFlow(0L)
     val averageTranslationTime: StateFlow<Long> = _averageTranslationTime.asStateFlow()
     
-    // ONNX Runtime state
-    private var encoderSession: OrtSession? = null
-    private var decoderSession: OrtSession? = null
-    private var onnxEnvironment: OrtEnvironment? = null
+    // ONNX Runtime state (temporarily disabled)
+    // private var encoderSession: OrtSession? = null
+    // private var decoderSession: OrtSession? = null
+    // private var onnxEnvironment: OrtEnvironment? = null
     private var tokenizer: TranslationTokenizer? = null
     
     // Performance tracking
@@ -54,7 +54,8 @@ class TranslationManager(private val context: Context) {
     private val totalMemoryUsage = AtomicLong(0)
     
     init {
-        initializeOnnxRuntime()
+        // initializeOnnxRuntime()
+        println("🔧 [TRANSLATION] TranslationManager initialized (ONNX disabled)")
     }
     
     /**
@@ -62,7 +63,7 @@ class TranslationManager(private val context: Context) {
      */
     private fun initializeOnnxRuntime() {
         try {
-            onnxEnvironment = OrtEnvironment.getEnvironment()
+            // onnxEnvironment = OrtEnvironment.getEnvironment()
             println("✅ [TRANSLATION] ONNX Runtime initialized successfully")
         } catch (e: Exception) {
             println("❌ [TRANSLATION] Failed to initialize ONNX Runtime: ${e.message}")
@@ -85,6 +86,11 @@ class TranslationManager(private val context: Context) {
         println("🔧 [TRANSLATION] Language pair: $sourceLanguage → $targetLanguage")
         
         try {
+            // ONNX temporarily disabled
+            println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback mode")
+            return loadFallbackModel(modelName, sourceLanguage, targetLanguage)
+            
+            /*
             if (onnxEnvironment == null) {
                 println("❌ [TRANSLATION] ONNX Runtime not initialized, using fallback mode")
                 return loadFallbackModel(modelName, sourceLanguage, targetLanguage)
@@ -133,6 +139,7 @@ class TranslationManager(private val context: Context) {
             
             // Fallback to demo mode
             return loadFallbackModel(modelName, sourceLanguage, targetLanguage)
+            */
             
         } catch (e: Exception) {
             println("❌ [TRANSLATION] Failed to load translation models: ${e.message}")
@@ -178,6 +185,11 @@ class TranslationManager(private val context: Context) {
     ): Boolean {
         println("🔧 [TRANSLATION] Loading encoder-decoder architecture...")
         
+        // ONNX temporarily disabled
+        println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback mode")
+        return loadFallbackModel("${encoderFile.nameWithoutExtension}_${decoderFile.nameWithoutExtension}", sourceLanguage, targetLanguage)
+        
+        /*
         try {
             val sessionOptions = createSessionOptions()
             println("🔧 [TRANSLATION] Session options configured:")
@@ -223,6 +235,7 @@ class TranslationManager(private val context: Context) {
             decoderSession = null
             return false
         }
+        */
     }
     
     /**
@@ -233,6 +246,11 @@ class TranslationManager(private val context: Context) {
         sourceLanguage: String, 
         targetLanguage: String
     ): Boolean {
+        // ONNX temporarily disabled
+        println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback mode")
+        return loadFallbackModel(modelFile.nameWithoutExtension, sourceLanguage, targetLanguage)
+        
+        /*
         try {
             val sessionOptions = createSessionOptions()
             
@@ -259,33 +277,43 @@ class TranslationManager(private val context: Context) {
             encoderSession = null
             return false
         }
+        */
     }
     
     /**
      * Create session options based on translation quality
      */
-    private fun createSessionOptions(): OrtSession.SessionOptions {
+    private fun createSessionOptions(): Any {
+        // ONNX temporarily disabled
+        return Any()
+        
+        /*
         val sessionOptions = OrtSession.SessionOptions()
         
+        // Configure based on translation quality
         when (_translationQuality.value) {
             TranslationQuality.FAST -> {
-                sessionOptions.setIntraOpNumThreads(1)
-                sessionOptions.setInterOpNumThreads(1)
-                sessionOptions.setExecutionMode(OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL)
+                sessionOptions.intraOpNumThreads = 1
+                sessionOptions.interOpNumThreads = 1
+                sessionOptions.executionMode = OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL
+                println("🔧 [TRANSLATION] Fast mode: 1 thread, parallel execution")
             }
             TranslationQuality.MEDIUM -> {
-                sessionOptions.setIntraOpNumThreads(2)
-                sessionOptions.setInterOpNumThreads(1)
-                sessionOptions.setExecutionMode(OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL)
+                sessionOptions.intraOpNumThreads = 2
+                sessionOptions.interOpNumThreads = 1
+                sessionOptions.executionMode = OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL
+                println("🔧 [TRANSLATION] Medium mode: 2 threads, parallel execution")
             }
             TranslationQuality.HIGH -> {
-                sessionOptions.setIntraOpNumThreads(4)
-                sessionOptions.setInterOpNumThreads(2)
-                sessionOptions.setExecutionMode(OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL)
+                sessionOptions.intraOpNumThreads = 4
+                sessionOptions.interOpNumThreads = 2
+                sessionOptions.executionMode = OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL
+                println("🔧 [TRANSLATION] High mode: 4 threads, parallel execution")
             }
         }
         
         return sessionOptions
+        */
     }
     
     /**
@@ -321,54 +349,40 @@ class TranslationManager(private val context: Context) {
     }
     
     /**
-     * Translate text using loaded ONNX models
+     * Translate text from source to target language
      * 
      * @param text Text to translate
      * @param sourceLanguage Source language code
      * @param targetLanguage Target language code
-     * @return Translated text or original text if translation fails
+     * @return Translated text
      */
-    fun translateText(text: String, sourceLanguage: String, targetLanguage: String): String {
-        println("🔧 [TRANSLATION] Starting translation: '$text'")
-        println("🔧 [TRANSLATION] Language pair: $sourceLanguage → $targetLanguage")
+    fun translate(text: String, sourceLanguage: String, targetLanguage: String): String {
+        if (!_isModelLoaded.value) {
+            println("❌ [TRANSLATION] No translation model loaded")
+            return getFallbackTranslation(text, targetLanguage)
+        }
         
-        if (!_isModelLoaded.value || text.isBlank() || tokenizer == null) {
-            println("❌ [TRANSLATION] Translation prerequisites not met:")
-            println("  - Model loaded: ${_isModelLoaded.value}")
-            println("  - Text blank: ${text.isBlank()}")
-            println("  - Tokenizer: ${tokenizer != null}")
+        if (text.isBlank()) {
             return text
         }
+        
+        println("🔧 [TRANSLATION] Translating: '$text' ($sourceLanguage → $targetLanguage)")
         
         val startTime = System.currentTimeMillis()
         
         try {
             // Tokenize input text
-            println("🔧 [TRANSLATION] Tokenizing input text...")
-            val tokenizeStartTime = System.currentTimeMillis()
-            val inputTokens = tokenizer!!.tokenize(text)
-            val tokenizeTime = System.currentTimeMillis() - tokenizeStartTime
-            println("✅ [TRANSLATION] Tokenization completed in ${tokenizeTime}ms")
-            println("  - Input tokens: ${inputTokens.size} tokens")
-            println("  - Token array: ${inputTokens.take(10).contentToString()}...")
+            val inputTokens = tokenizer?.encode(text) ?: intArrayOf()
+            println("🔧 [TRANSLATION] Input tokens: ${inputTokens.contentToString()}")
             
-            if (inputTokens.isEmpty()) {
-                println("❌ [TRANSLATION] No tokens generated, returning original text")
-                return text
-            }
-            
-            val translatedText = if (encoderSession != null && decoderSession != null) {
-                println("🔧 [TRANSLATION] Using encoder-decoder architecture")
-                translateWithEncoderDecoder(inputTokens)
-            } else if (encoderSession != null) {
-                println("🔧 [TRANSLATION] Using single model architecture")
-                translateWithSingleModel(inputTokens)
-            } else {
-                println("🔧 [TRANSLATION] Using fallback translation")
-                translateWithFallback(inputTokens)
-            }
+            // ONNX temporarily disabled
+            println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback translation")
+            val translatedText = translateWithFallback(inputTokens)
             
             val translationTime = System.currentTimeMillis() - startTime
+            
+            // Update statistics
+            _translationCount.value = _translationCount.value + 1
             updateTranslationStats(translationTime)
             
             // Track performance metrics
@@ -396,6 +410,11 @@ class TranslationManager(private val context: Context) {
      * Translate using encoder-decoder architecture
      */
     private fun translateWithEncoderDecoder(inputTokens: IntArray): String {
+        // ONNX temporarily disabled
+        println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback translation")
+        return translateWithFallback(inputTokens)
+        
+        /*
         println("🔧 [TRANSLATION] Starting encoder-decoder translation...")
         
         // Step 1: Encode input tokens
@@ -460,12 +479,18 @@ class TranslationManager(private val context: Context) {
         println("✅ [TRANSLATION] Result: '$result'")
         
         return result
+        */
     }
     
     /**
      * Translate using single model architecture
      */
     private fun translateWithSingleModel(inputTokens: IntArray): String {
+        // ONNX temporarily disabled
+        println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback translation")
+        return translateWithFallback(inputTokens)
+        
+        /*
         // Prepare input tensor
         val inputShape = longArrayOf(1, inputTokens.size.toLong())
         val inputTensor = OnnxTensor.createTensor(
@@ -487,6 +512,7 @@ class TranslationManager(private val context: Context) {
         
         // Decode output tokens to text
         return tokenizer!!.decode(outputBuffer, outputShape)
+        */
     }
     
     /**

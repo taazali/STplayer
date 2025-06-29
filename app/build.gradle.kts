@@ -75,6 +75,11 @@ dependencies {
     // ONNX Runtime for translation models
     implementation(libs.onnxruntime.android)
     
+    // Additional dependencies for missing imports
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.compose.material:material-icons-core:1.6.3")
+    implementation("androidx.compose.material:material-icons-extended:1.6.3")
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
