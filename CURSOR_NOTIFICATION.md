@@ -144,6 +144,7 @@ Description: Add new translation quality metric
 
 ## 🔄 Current Automation Rules
 1. If Cursor modifies CURSOR_NOTIFICATION.md with `[REQUEST]` tag:
+[LINGMA_RESPONSE]: Acknowledged - Working on your request
    - Lingma will respond with relevant information or code changes
    - Response will be marked with `[LINGMA_RESPONSE]`
 2. If Cursor creates/updates DECISION_LOG.md:
