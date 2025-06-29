@@ -575,7 +575,7 @@ fun TranslationStatusIndicator(
                 fontSize = 12.sp
             )
             
-            Text(
+    Text(
                 text = "Status: ${if (isModelLoaded) "✅ Loaded" else "❌ Not Loaded"}",
                 color = if (isModelLoaded) Color.Green else Color.Red,
                 fontSize = 12.sp
