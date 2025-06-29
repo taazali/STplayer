@@ -1,182 +1,255 @@
 # STplayer Developer Notes
 
-## Development Environment & Workflow
+## 🚀 Project Overview
 
-### Local Development (Cursor/IDE)
-- **OS**: macOS Big Sur (supports up to Java 11)
-- **Role**: Code generation, editing, and refactoring only
-- **Build System**: Local builds may fail due to Java version constraints - this is expected and should be ignored
+STplayer is an AI-powered video player with real-time transcription and translation capabilities, built for Android TV and tablets. The app uses Whisper.cpp for speech-to-text and ONNX Runtime for translation.
 
-### Cloud Development (Android Studio Cloud)
-- **Environment**: Java 17+ with latest Android tools
-- **Role**: Official building, testing, and dependency management
-- **Source of Truth**: All build configurations and dependencies
+## 🏗️ Architecture
 
-### Android Studio Cloud Environment Details
-- **Project Root**: `/home/user/AndroidStudioProjects/STplayer`
-- **OS**: Ubuntu 24.04.2 LTS
-- **Java**: OpenJDK 17+
-- **Android SDK**: `/home/user/Android/Sdk`
-- **ANDROID_HOME**: `/home/user/Android/Sdk`
+### Core Components
 
-### Path Conventions
-- **Native/C++ Code**: Always place under `app/src/main/cpp/`
-- **SDK/NDK References**: Use `$ANDROID_HOME` variable or `/home/user/Android/Sdk`
-- **JNI Libraries**: Build to `app/src/main/cpp/` directory
-- **Assets**: Place in `app/src/main/assets/`
-- **CMake Files**: Use `app/src/main/cpp/CMakeLists.txt`
+1. **MainActivity**: Main UI with ExoPlayer integration
+2. **SubtitleManager**: Manages subtitle display and state
+3. **TranslationManager**: Handles ONNX-based translation
+4. **WhisperBridge**: JNI bridge to Whisper.cpp
+5. **AudioCaptureManager**: Captures PCM audio from ExoPlayer
 
-## Important Workflow Rules
+### Data Flow
 
-### What Cursor Should Do:
-1. ✅ Generate and edit Kotlin/Compose/ExoPlayer code
-2. ✅ Refactor and improve existing code
-3. ✅ Create new features and components
-4. ✅ Work with the latest code from GitHub
-5. ✅ Push changes for cloud review and build
-6. ✅ Use cloud environment paths for all references
-
-### What Cursor Should NOT Do:
-1. ❌ Change build.gradle, gradle wrapper, or project settings for Java 11 compatibility
-2. ❌ Attempt local builds or dependency management
-3. ❌ Downgrade Android Gradle Plugin or other tools
-4. ❌ Fix local build errors related to Java/Gradle versions
-5. ❌ Suggest compatibility changes unless specifically requested
-6. ❌ Use local macOS paths in code or documentation
-
-### Build & Test Process:
-1. **Local**: Code editing and generation only
-2. **Cloud**: All building, testing, and dependency updates
-3. **GitHub**: Source of truth for latest code
-4. **Shihab**: Manages cloud environment and final builds
-
-## Project Architecture
-
-### Current Components:
-- **MainActivity**: ExoPlayer integration with Compose UI
-- **AudioCaptureManager**: PCM audio capture from ExoPlayer
-- **WhisperBridge**: JNI interface for native Whisper.cpp integration
-- **SubtitleManager**: Real-time subtitle display and state management
-- **TranslationManager**: ONNX Runtime integration for translation
-- **SubtitleOverlay**: MX Player-style subtitle display component
-
-### AI Pipeline:
-1. **Audio Capture**: ExoPlayer PCM → AudioCaptureManager
-2. **Transcription**: Whisper.cpp via JNI → WhisperBridge
-3. **Translation**: ONNX Runtime → TranslationManager
-4. **Display**: SubtitleManager → SubtitleOverlay
-
-### Planned Features:
-- Real-time audio transcription via Whisper.cpp ✅ (Implemented)
-- Multi-language translation via ONNX ✅ (Implemented)
-- Gesture controls for subtitle positioning
-- External video player intent handling
-
-### Native Code Structure:
 ```
-app/src/main/cpp/
-├── CMakeLists.txt
-└── whispercpp/
-    └── whisper_jni.cpp
+ExoPlayer → AudioCaptureManager → WhisperBridge → SubtitleManager → TranslationManager → UI
 ```
 
-### Assets Structure:
+## 📦 Model Requirements
+
+### Translation Models
+
+**Location**: `app/src/main/assets/translation/`
+
+**Supported Architectures**:
+1. **Encoder-Decoder** (Recommended):
+   - `translation_en_ar_encoder_int8.onnx`
+   - `translation_en_ar_decoder_int8.onnx`
+
+2. **Single Model** (Fallback):
+   - `translation_en_ar.onnx`
+
+**Model Specifications**:
+- **Format**: ONNX (Open Neural Network Exchange)
+- **Quantization**: INT8 (recommended for mobile)
+- **Max Size**: 150MB per model
+- **Supported Languages**: English → Arabic, Spanish, French, German, Chinese
+
+### Whisper Models
+
+**Location**: `app/src/main/assets/whisper/`
+
+**Supported Models**:
+- `ggml-base.en.bin` (Recommended - 142MB)
+- `ggml-small.en.bin` (Faster - 244MB)
+- `ggml-tiny.en.bin` (Fastest - 39MB)
+
+## 🔧 Setup Instructions
+
+### Prerequisites
+
+1. **Android Studio Cloud** with:
+   - Java 17
+   - Android SDK 34
+   - NDK 21.4.7075529
+   - CMake 3.28.3
+
+2. **Dependencies**:
+   - ONNX Runtime Android 1.18.0
+   - ExoPlayer 1.3.1
+   - Jetpack Compose 2024.09.00
+
+### Build Configuration
+
+```kotlin
+// app/build.gradle.kts
+android {
+    compileSdk = 34
+    targetSdk = 34
+    ndkVersion = "21.4.7075529"
+    
+    externalNativeBuild {
+        cmake {
+            version = "3.28.3"
+        }
+    }
+}
+
+dependencies {
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
+    implementation("androidx.media3:media3-exoplayer:1.3.1")
+    // ... other dependencies
+}
 ```
-app/src/main/assets/
-├── whisper/                  # Whisper.cpp models
-│   ├── ggml-base.en.bin     # English transcription
-│   └── ggml-base.ar.bin     # Arabic transcription
-└── translation/             # ONNX translation models
-    ├── translation_en_ar.onnx  # English → Arabic
-    ├── translation_en_es.onnx  # English → Spanish
-    └── translation_en_fr.onnx  # English → French
+
+### Model Setup
+
+1. **Download Models**:
+   ```bash
+   # Translation models (example for English→Arabic)
+   wget https://huggingface.co/Helsinki-NLP/opus-mt-en-ar/resolve/main/encoder_model_int8.onnx -O app/src/main/assets/translation/translation_en_ar_encoder_int8.onnx
+   wget https://huggingface.co/Helsinki-NLP/opus-mt-en-ar/resolve/main/decoder_model_int8.onnx -O app/src/main/assets/translation/translation_en_ar_decoder_int8.onnx
+   
+   # Whisper model
+   wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin -O app/src/main/assets/whisper/ggml-base.en.bin
+   ```
+
+2. **Verify Assets Structure**:
+   ```
+   app/src/main/assets/
+   ├── translation/
+   │   ├── translation_en_ar_encoder_int8.onnx
+   │   ├── translation_en_ar_decoder_int8.onnx
+   │   └── translation_en_ar.onnx (fallback)
+   └── whisper/
+       └── ggml-base.en.bin
+   ```
+
+## 🎯 Performance Optimization
+
+### ONNX Runtime Settings
+
+```kotlin
+// TranslationQuality.FAST
+sessionOptions.setIntraOpNumThreads(1)
+sessionOptions.setInterOpNumThreads(1)
+
+// TranslationQuality.MEDIUM (Default)
+sessionOptions.setIntraOpNumThreads(2)
+sessionOptions.setInterOpNumThreads(1)
+
+// TranslationQuality.HIGH
+sessionOptions.setIntraOpNumThreads(4)
+sessionOptions.setInterOpNumThreads(2)
 ```
 
-## Dependencies & Libraries
+### Audio Processing
 
-### Core Dependencies:
-- **ExoPlayer**: Media playback and audio capture
-- **Jetpack Compose**: Modern UI framework
-- **ONNX Runtime Mobile**: Translation model inference
-- **Whisper.cpp**: Native speech recognition
+- **Chunk Size**: 3-5 seconds of PCM audio
+- **Sample Rate**: 16kHz (Whisper requirement)
+- **Buffer Size**: 4KB circular buffer
+- **Processing**: Background coroutine to avoid UI blocking
 
-### Version Management:
-- All versions managed in `gradle/libs.versions.toml`
-- Cloud environment handles dependency resolution
-- Local development uses version catalog for consistency
+### Memory Management
 
-## Code Standards
+- **Model Caching**: Models extracted to cache directory on first run
+- **Session Reuse**: ONNX sessions created once, reused for all translations
+- **Memory Monitoring**: Real-time memory usage tracking
 
-### Kotlin/Compose:
-- Use modern Compose patterns and best practices
-- Follow Material Design 3 guidelines
-- Implement proper state management with ViewModels
-- Use coroutines for async operations
+## 🐛 Troubleshooting
 
-### Native Code (JNI):
-- Clear separation between Kotlin and C++ layers
-- Proper error handling and resource management
-- Comprehensive logging for debugging
-- Memory-efficient audio processing
-- Always use cloud environment paths
+### Common Issues
 
-### ONNX Integration:
-- Load models from assets to cache directory
-- Use proper session configuration for performance
-- Implement fallback mechanisms for model failures
-- Monitor memory usage and inference timing
-- Support multiple quality levels (FAST/MEDIUM/HIGH)
+1. **ONNX Runtime Not Found**:
+   ```
+   ❌ [TRANSLATION] Failed to initialize ONNX Runtime
+   ```
+   **Solution**: Check ONNX Runtime dependency in build.gradle.kts
 
-### Comments & Documentation:
-- Mark all TODO sections clearly
-- Document injection points for future features
-- Explain complex algorithms and data flows
-- Keep comments up-to-date with code changes
-- Reference cloud environment paths in documentation
+2. **Model Loading Failed**:
+   ```
+   ❌ [TRANSLATION] No translation models found
+   ```
+   **Solution**: Verify models exist in assets/translation/
 
-## Performance Considerations
+3. **Native Library Error**:
+   ```
+   UnsatisfiedLinkError: No implementation found
+   ```
+   **Solution**: Check NDK configuration and CMake setup
 
-### Memory Management:
-- **Whisper Models**: ~150MB RAM per model
-- **Translation Models**: ~70MB RAM per model
-- **Total Target**: <500MB RAM for all AI models
-- **Cache Management**: Extract models to cache on first use
+4. **Memory Issues**:
+   ```
+   OutOfMemoryError: Failed to allocate
+   ```
+   **Solution**: Use smaller models or reduce thread count
 
-### Inference Performance:
-- **Whisper**: 2-5 seconds per 5-second audio chunk
-- **Translation**: 50-200ms per sentence
-- **UI Updates**: Real-time subtitle overlay
-- **Threading**: Parallel processing where possible
+### Debug Logging
 
-### Optimization Strategies:
-- Use quantized ONNX models (INT8)
-- Implement model caching and reuse
-- Adjust thread count based on device capabilities
-- Monitor and log performance metrics
+Enable verbose logging:
+```kotlin
+// In MainActivity or TranslationManager
+println("🔧 [DEBUG] Detailed operation info")
+println("✅ [SUCCESS] Operation completed")
+println("❌ [ERROR] Operation failed")
+```
 
-## Troubleshooting
+## 📊 Performance Metrics
 
-### Common Issues:
-1. **Local Build Failures**: Expected due to Java version - ignore and use cloud builds
-2. **Gradle Sync Errors**: Usually related to local environment - check cloud builds instead
-3. **Missing Dependencies**: Add to libs.versions.toml and let cloud handle resolution
-4. **Path Issues**: Always use cloud environment paths, not local macOS paths
-5. **Model Loading Failures**: Check asset paths and ONNX format compatibility
-6. **Memory Issues**: Monitor RAM usage and use smaller models if needed
+### Translation Performance
 
-### Model-Specific Issues:
-- **Whisper**: Verify GGML format and model file integrity
-- **ONNX**: Check opset version and quantization compatibility
-- **Translation**: Ensure proper input/output tensor shapes
-- **Performance**: Adjust quality settings and thread configuration
+- **Target Latency**: < 100ms for short phrases
+- **Memory Usage**: < 200MB total
+- **Throughput**: 10+ translations per second
 
-### Getting Help:
-- Check cloud build logs for actual issues
-- Review GitHub for latest working code
-- Ask Shihab for cloud environment status
-- Verify all paths match cloud environment
-- Check model documentation in assets/ directories
+### Audio Processing
+
+- **Transcription Latency**: < 2 seconds
+- **Audio Quality**: 16kHz, 16-bit PCM
+- **Buffer Management**: Zero-copy where possible
+
+## 🔄 Development Workflow
+
+### Testing
+
+1. **Unit Tests**: Run `./gradlew test`
+2. **Integration Tests**: Run `./gradlew connectedAndroidTest`
+3. **Performance Tests**: Monitor logs for timing information
+
+### Deployment
+
+1. **Build**: `./gradlew assembleRelease`
+2. **Sign**: Use release keystore
+3. **Install**: `adb install app/build/outputs/apk/release/app-release.apk`
+
+## 📚 API Reference
+
+### TranslationManager
+
+```kotlin
+class TranslationManager(context: Context) {
+    fun loadModel(modelName: String, sourceLanguage: String, targetLanguage: String): Boolean
+    fun translateText(text: String, sourceLanguage: String, targetLanguage: String): String
+    fun setTranslationQuality(quality: TranslationQuality)
+    fun unloadModel()
+    fun getPerformanceStats(): TranslationPerformanceStats
+}
+```
+
+### SubtitleManager
+
+```kotlin
+class SubtitleManager(context: Context) {
+    fun processTranscription(text: String)
+    fun setSourceLanguage(language: String)
+    fun setTargetLanguage(language: String)
+    fun setTranslationManager(manager: TranslationManager)
+}
+```
+
+## 🚀 Future Enhancements
+
+1. **Model Conversion**: Add scripts for converting HuggingFace models to ONNX
+2. **Gesture Controls**: Implement subtitle positioning gestures
+3. **Batch Processing**: Support for batch translation
+4. **Model Compression**: Further model optimization
+5. **Offline Mode**: Complete offline functionality
+
+## 📞 Support
+
+For issues and questions:
+1. Check this documentation
+2. Review logs for error messages
+3. Test with fallback mode
+4. Verify model compatibility
 
 ---
 
-**Remember**: Local development is for code editing only. All builds and tests happen in the cloud environment with Java 17+ and latest Android tools. Always use cloud environment paths for consistency. 
+**Last Updated**: December 2024
+**Version**: 1.0.0
+**Compatibility**: Android 5.0+ (API 21+) 
