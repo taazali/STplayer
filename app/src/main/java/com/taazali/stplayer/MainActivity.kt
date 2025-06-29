@@ -384,17 +384,13 @@ class CustomAudioSink(
     
     override fun getSkipSilenceEnabled(): Boolean = delegate.skipSilenceEnabled
     
-    override fun setAudioOffloadMode(audioOffloadMode: androidx.media3.exoplayer.audio.AudioSink.AudioOffloadMode): Unit = delegate.setAudioOffloadMode(audioOffloadMode)
+    override fun setListener(listener: AudioSink.Listener): Unit = delegate.setListener(listener)
     
-    override fun getAudioOffloadMode(): androidx.media3.exoplayer.audio.AudioSink.AudioOffloadMode = delegate.audioOffloadMode
-    
-    override fun setListener(listener: androidx.media3.exoplayer.audio.AudioSink.Listener?): Unit = delegate.setListener(listener)
-    
-    override fun setAudioAttributes(audioAttributes: androidx.media3.common.AudioAttributes, handleAudioFocus: Boolean): Unit = delegate.setAudioAttributes(audioAttributes, handleAudioFocus)
+    override fun setAudioAttributes(audioAttributes: androidx.media3.common.AudioAttributes): Unit = delegate.setAudioAttributes(audioAttributes)
     
     override fun setAudioSessionId(audioSessionId: Int): Unit = delegate.setAudioSessionId(audioSessionId)
     
-    override fun setAuxEffectInfo(auxEffectInfo: androidx.media3.common.AuxEffectInfo?): Unit = delegate.setAuxEffectInfo(auxEffectInfo)
+    override fun setAuxEffectInfo(auxEffectInfo: androidx.media3.common.AuxEffectInfo): Unit = delegate.setAuxEffectInfo(auxEffectInfo)
     
     override fun setPreferredDevice(preferredDevice: android.media.AudioDeviceInfo?): Unit = delegate.setPreferredDevice(preferredDevice)
     
@@ -405,12 +401,6 @@ class CustomAudioSink(
     override fun flush(): Unit = delegate.flush()
     
     override fun reset(): Unit = delegate.reset()
-    
-    override fun setWakeupListener(wakeupListener: androidx.media3.exoplayer.audio.AudioSink.WakeupListener?): Unit = delegate.setWakeupListener(wakeupListener)
-    
-    override fun setOffloadMode(offloadMode: androidx.media3.exoplayer.audio.AudioSink.OffloadMode): Unit = delegate.setOffloadMode(offloadMode)
-    
-    override fun getOffloadMode(): androidx.media3.exoplayer.audio.AudioSink.OffloadMode = delegate.offloadMode
 }
 
 @Composable
