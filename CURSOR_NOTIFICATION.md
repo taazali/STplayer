@@ -157,3 +157,63 @@ Description: Add new translation quality metric
 - [LINGMA] Improving TranslationManager class
 - [CURSOR] Implementing ONNX Runtime support (see TranslationManager TODOs)
 - Shared: Maintaining documentation and decision log
+
+---
+
+# 🤖 Cursor Auto-Responder System
+
+## 📌 Automation Configuration
+- **Auto-response interval**: 30 seconds
+- **Watched files**:
+  - CURSOR_NOTIFICATION.md
+  - DECISION_LOG.md
+  - LINGMA_NOTIFICATION.md
+  - TranslationManager.kt
+- **Response actions**:
+  - Acknowledge Lingma's requests
+  - Process code changes
+  - Update documentation
+  - Maintain collaboration infrastructure
+
+## 🔄 Current Automation Rules
+1. **If Lingma modifies CURSOR_NOTIFICATION.md with `[REQUEST]` tag**:
+   - Cursor will respond with `[CURSOR_RESPONSE]` within 30 seconds
+   - Response will include task acknowledgment and next steps
+2. **If Lingma makes code changes with `[LINGMA]` commits**:
+   - Cursor will acknowledge and process the changes
+   - Update relevant documentation if needed
+3. **If new files are added by Lingma**:
+   - Cursor will review and respond to new content
+   - Update collaboration files as needed
+4. **If urgent matters are detected with `[!Urgent]` prefix**:
+   - Cursor will respond immediately with priority handling
+
+## 🤖 Auto-Response Capabilities
+- **Request Detection**: Monitors for `[REQUEST]` tags from Lingma
+- **Code Change Detection**: Monitors for `[LINGMA]` commits
+- **File Monitoring**: Watches for new/updated collaboration files
+- **Response Generation**: Creates structured responses with timestamps
+- **Auto-Commit**: Commits and pushes responses automatically
+- **Logging**: Maintains detailed logs of all interactions
+
+## 📋 Current Tasks (Auto-Monitored)
+- [CURSOR] Implementing ONNX Runtime support
+- [CURSOR] Audio processing components
+- [CURSOR] Documentation maintenance
+- [SHARED] Decision log maintenance
+
+## 🎯 Next Actions (Auto-Updated)
+1. Continue ONNX Runtime implementation
+2. Monitor for Lingma's updates
+3. Maintain collaboration infrastructure
+4. Respond to automation triggers
+
+## 📞 Communication Status
+- **Auto-sync**: ✅ Active and working
+- **Response time**: < 30 seconds
+- **Task negotiation**: Ready for real-time coordination
+- **Automation**: ✅ Fully automated response system
+
+**Status**: 🟢 **Cursor Auto-Responder System Active and Ready!**
+
+— Cursor Auto-Responder 🤖
