@@ -496,7 +496,9 @@ class CustomAudioSink(
     private val subtitleManager: SubtitleManager,
     private val whisperBridge: WhisperBridge,
     private val audioCaptureManager: AudioCaptureManager
-) : DefaultAudioSink.Builder().build() {
+) : AudioSink {
+    
+    private val delegate = DefaultAudioSink.Builder().build()
     
     override fun handleBuffer(
         buffer: ByteBuffer,
@@ -513,8 +515,56 @@ class CustomAudioSink(
             audioCaptureManager.processAudioChunk(subtitleManager, whisperBridge)
         }
         
-        return super.handleBuffer(buffer, presentationTimeUs, encodedAccessUnitCount)
+        return delegate.handleBuffer(buffer, presentationTimeUs, encodedAccessUnitCount)
     }
+    
+    override fun supportsOutput(channelCount: Int, encoding: Int): Boolean {
+        return delegate.supportsOutput(channelCount, encoding)
+    }
+    
+    override fun getCurrentPositionUs(isSourceEnded: Boolean): Long {
+        return delegate.getCurrentPositionUs(isSourceEnded)
+    }
+    
+    override fun play(): Unit = delegate.play()
+    
+    override fun handleDiscontinuity(): Unit = delegate.handleDiscontinuity()
+    
+    override fun setPlaybackParameters(playbackParameters: androidx.media3.common.PlaybackParameters): Unit = delegate.setPlaybackParameters(playbackParameters)
+    
+    override fun getPlaybackParameters(): androidx.media3.common.PlaybackParameters = delegate.playbackParameters
+    
+    override fun setSkipSilenceEnabled(skipSilenceEnabled: Boolean): Unit = delegate.setSkipSilenceEnabled(skipSilenceEnabled)
+    
+    override fun getSkipSilenceEnabled(): Boolean = delegate.skipSilenceEnabled
+    
+    override fun setAudioOffloadMode(audioOffloadMode: androidx.media3.exoplayer.audio.AudioSink.AudioOffloadMode): Unit = delegate.setAudioOffloadMode(audioOffloadMode)
+    
+    override fun getAudioOffloadMode(): androidx.media3.exoplayer.audio.AudioSink.AudioOffloadMode = delegate.audioOffloadMode
+    
+    override fun setListener(listener: androidx.media3.exoplayer.audio.AudioSink.Listener?): Unit = delegate.setListener(listener)
+    
+    override fun setAudioAttributes(audioAttributes: androidx.media3.common.AudioAttributes, handleAudioFocus: Boolean): Unit = delegate.setAudioAttributes(audioAttributes, handleAudioFocus)
+    
+    override fun setAudioSessionId(audioSessionId: Int): Unit = delegate.setAudioSessionId(audioSessionId)
+    
+    override fun setAuxEffectInfo(auxEffectInfo: androidx.media3.common.AuxEffectInfo?): Unit = delegate.setAuxEffectInfo(auxEffectInfo)
+    
+    override fun setPreferredDevice(preferredDevice: android.media.AudioDeviceInfo?): Unit = delegate.setPreferredDevice(preferredDevice)
+    
+    override fun setVolume(volume: Float): Unit = delegate.setVolume(volume)
+    
+    override fun pause(): Unit = delegate.pause()
+    
+    override fun flush(): Unit = delegate.flush()
+    
+    override fun reset(): Unit = delegate.reset()
+    
+    override fun setWakeupListener(wakeupListener: androidx.media3.exoplayer.audio.AudioSink.WakeupListener?): Unit = delegate.setWakeupListener(wakeupListener)
+    
+    override fun setOffloadMode(offloadMode: androidx.media3.exoplayer.audio.AudioSink.OffloadMode): Unit = delegate.setOffloadMode(offloadMode)
+    
+    override fun getOffloadMode(): androidx.media3.exoplayer.audio.AudioSink.OffloadMode = delegate.offloadMode
 }
 
 @Composable

@@ -201,33 +201,6 @@ class TranslationManager(private val context: Context) {
     }
     
     /**
-     * Create session options based on translation quality
-     */
-    private fun createSessionOptions(): OrtSession.SessionOptions {
-        val sessionOptions = OrtSession.SessionOptions()
-        
-        when (_translationQuality.value) {
-            TranslationQuality.FAST -> {
-                sessionOptions.setIntraOpNumThreads(1)
-                sessionOptions.setInterOpNumThreads(1)
-                sessionOptions.setExecutionMode(OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL)
-            }
-            TranslationQuality.MEDIUM -> {
-                sessionOptions.setIntraOpNumThreads(2)
-                sessionOptions.setInterOpNumThreads(1)
-                sessionOptions.setExecutionMode(OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL)
-            }
-            TranslationQuality.HIGH -> {
-                sessionOptions.setIntraOpNumThreads(4)
-                sessionOptions.setInterOpNumThreads(2)
-                sessionOptions.setExecutionMode(OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL)
-            }
-        }
-        
-        return sessionOptions
-    }
-    
-    /**
      * Extract ONNX model from assets to cache directory
      */
     private fun extractModelFromAssets(modelName: String): File? {
