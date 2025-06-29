@@ -5,6 +5,12 @@
 
 # Usage: ./auto_sync.sh "Commit message"
 
+# Configuration
+REPO_URL="git@github.com:taazali/STplayer.git"
+SYNC_INTERVAL=30  # Sync every 30 seconds
+LOG_FILE="auto_sync.log"
+LAST_COMMIT_FILE=".last_commit"
+
 # Check if a commit message was provided
 if [ -z "$1" ]; then
   echo "Error: Please provide a commit message"

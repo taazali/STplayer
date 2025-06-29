@@ -8,7 +8,7 @@ echo "======================================"
 echo ""
 
 # Configuration
-REPO_URL="https://github.com/taazali/STplayer.git"
+REPO_URL="git@github.com:taazali/STplayer.git"
 SYNC_INTERVAL=30  # Sync every 30 seconds
 LOG_FILE="cursor_sync.log"
 LAST_COMMIT_FILE=".cursor_last_commit"
