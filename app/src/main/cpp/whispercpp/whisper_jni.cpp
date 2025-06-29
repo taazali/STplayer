@@ -5,6 +5,7 @@
 #include <android/asset_manager_jni.h>
 #include <vector>
 #include <memory>
+#include <random>
 
 // TODO: Include actual Whisper.cpp headers when integrated
 // #include "whisper.h"
@@ -13,6 +14,9 @@
 #define LOG_TAG "WhisperJNI"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+// Forward declaration
+static std::string simulateTranscription(const std::vector<float>& samples);
 
 // Global variables for Whisper context and model
 static struct {
@@ -27,7 +31,7 @@ static struct {
 
 // Helper function to load file from assets
 static bool load_asset_file(AAssetManager* asset_manager, const char* filename, std::vector<uint8_t>& data) {
-    AAsset* asset = AAsset_open(asset_manager, filename, AASSET_MODE_BUFFER);
+    AAsset* asset = AAssetManager_open(asset_manager, filename, AASSET_MODE_BUFFER);
     if (!asset) {
         LOGE("Failed to open asset: %s", filename);
         return false;
@@ -61,6 +65,7 @@ extern "C" {
  */
 JNIEXPORT jboolean JNICALL
 Java_com_taazali_stplayer_WhisperBridge_initializeModel(JNIEnv *env, jobject thiz, jobject assetManager, jstring modelName) {
+    (void)thiz; // Suppress unused parameter warning
     const char* model_name = env->GetStringUTFChars(modelName, 0);
     
     LOGI("Initializing Whisper model: %s", model_name);
@@ -118,6 +123,7 @@ Java_com_taazali_stplayer_WhisperBridge_initializeModel(JNIEnv *env, jobject thi
  */
 JNIEXPORT jstring JNICALL
 Java_com_taazali_stplayer_WhisperBridge_transcribeAudio(JNIEnv *env, jobject thiz, jbyteArray pcmBuffer) {
+    (void)thiz; // Suppress unused parameter warning
     if (!whisper_state.model_loaded) {
         LOGE("Whisper model not loaded");
         return env->NewStringUTF("[ERROR: Model not loaded]");
@@ -188,6 +194,7 @@ Java_com_taazali_stplayer_WhisperBridge_transcribeAudio(JNIEnv *env, jobject thi
  */
 JNIEXPORT jboolean JNICALL
 Java_com_taazali_stplayer_WhisperBridge_setParameters(JNIEnv *env, jobject thiz, jstring language, jstring task) {
+    (void)thiz; // Suppress unused parameter warning
     const char* lang = env->GetStringUTFChars(language, 0);
     const char* task_str = env->GetStringUTFChars(task, 0);
     
@@ -202,76 +209,101 @@ Java_com_taazali_stplayer_WhisperBridge_setParameters(JNIEnv *env, jobject thiz,
 }
 
 /**
- * Clean up native resources
+ * Clean up Whisper resources
  * 
  * @param env JNI environment
  * @param thiz Java object reference
  */
 JNIEXPORT void JNICALL
 Java_com_taazali_stplayer_WhisperBridge_cleanup(JNIEnv *env, jobject thiz) {
+    (void)env; // Suppress unused parameter warning
+    (void)thiz; // Suppress unused parameter warning
+    
     LOGI("Cleaning up Whisper resources");
     
-    try {
-        // TODO: Implement actual cleanup
-        // if (whisper_state.ctx) {
-        //     whisper_free(whisper_state.ctx);
-        //     whisper_state.ctx = nullptr;
-        // }
-        
-        whisper_state.model_loaded = false;
-        whisper_state.model_path.clear();
-        
-        LOGI("Whisper resources cleaned up successfully");
-        
-    } catch (const std::exception& e) {
-        LOGE("Exception during cleanup: %s", e.what());
-    }
+    // TODO: Implement actual cleanup
+    // if (whisper_state.ctx) {
+    //     whisper_free(whisper_state.ctx);
+    //     whisper_state.ctx = nullptr;
+    // }
+    
+    whisper_state.model_loaded = false;
+    whisper_state.model_path.clear();
 }
 
 /**
- * Get the current transcription status
+ * Get Whisper status information
  * 
  * @param env JNI environment
  * @param thiz Java object reference
- * @return Status string indicating current state
+ * @return Status string
  */
 JNIEXPORT jstring JNICALL
 Java_com_taazali_stplayer_WhisperBridge_getStatus(JNIEnv *env, jobject thiz) {
-    std::string status;
+    (void)thiz; // Suppress unused parameter warning
     
-    if (whisper_state.model_loaded) {
-        status = "Whisper model loaded: " + whisper_state.model_path;
-    } else {
-        status = "Whisper model not loaded";
-    }
+    std::string status = "Whisper Status: ";
+    status += whisper_state.model_loaded ? "Model loaded" : "Model not loaded";
+    status += " (" + whisper_state.model_path + ")";
+    status += ", Sample rate: " + std::to_string(whisper_state.sample_rate);
+    status += ", Threads: " + std::to_string(whisper_state.n_threads);
     
     return env->NewStringUTF(status.c_str());
 }
 
 } // extern "C"
 
-// Helper function to simulate transcription (for demo purposes)
+/**
+ * Simulate transcription based on audio characteristics
+ * This is a placeholder implementation until actual Whisper.cpp is integrated
+ */
 static std::string simulateTranscription(const std::vector<float>& samples) {
-    // Analyze audio characteristics to generate realistic transcription
+    if (samples.empty()) {
+        return "[Silence]";
+    }
+    
+    // Calculate audio characteristics
     float max_amplitude = 0.0f;
     float avg_amplitude = 0.0f;
+    int zero_crossings = 0;
     
-    for (float sample : samples) {
-        float abs_sample = std::abs(sample);
+    for (size_t i = 0; i < samples.size(); ++i) {
+        float abs_sample = std::abs(samples[i]);
         max_amplitude = std::max(max_amplitude, abs_sample);
         avg_amplitude += abs_sample;
+        
+        if (i > 0 && ((samples[i] >= 0) != (samples[i-1] >= 0))) {
+            zero_crossings++;
+        }
     }
-    
     avg_amplitude /= samples.size();
     
-    // Generate transcription based on audio characteristics
+    // Generate simulated transcription based on audio characteristics
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 3);
+    
+    std::string transcription;
+    
     if (max_amplitude < 0.01f) {
-        return "[Silence detected]";
-    } else if (avg_amplitude < 0.1f) {
-        return "Hello, this is a quiet audio sample.";
-    } else if (avg_amplitude < 0.3f) {
-        return "Welcome to STplayer with real-time transcription.";
+        transcription = "[Silence or very quiet audio]";
+    } else if (max_amplitude < 0.1f) {
+        transcription = "[Quiet speech detected]";
+    } else if (zero_crossings > samples.size() / 100) {
+        transcription = "[Speech with varied pitch]";
     } else {
-        return "This is a loud audio sample with Whisper transcription.";
+        transcription = "[Clear speech detected]";
     }
+    
+    // Add some random simulated text
+    const char* phrases[] = {
+        " Hello world",
+        " Testing audio",
+        " Whisper simulation",
+        " Audio transcription"
+    };
+    
+    transcription += phrases[dis(gen)];
+    
+    return transcription;
 } 
