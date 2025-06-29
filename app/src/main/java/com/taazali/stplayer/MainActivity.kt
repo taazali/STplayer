@@ -1,6 +1,7 @@
 package com.taazali.stplayer
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,15 +37,22 @@ import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentLinkedQueue
 
+// Define the TAG constant at the top of the file
+private const val TAG = "MainActivity"
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        Log.d(TAG, "MainActivity onCreate started")
+        
         setContent {
             STplayerTheme {
                 STplayerApp()
             }
         }
+        
+        Log.d(TAG, "MainActivity onCreate completed")
     }
 }
 
@@ -131,43 +139,43 @@ fun VideoPlayerSection(
     
     // Start audio capture when player is ready
     LaunchedEffect(exoPlayer) {
-        println("🚀 [MAIN] Starting STplayer initialization...")
+        Log.d(TAG, "🚀 Starting STplayer initialization...")
         
         // Initialize Whisper model
-        println("🔧 [MAIN] Initializing Whisper transcription...")
+        Log.d(TAG, "🔧 Initializing Whisper transcription...")
         try {
             val modelName = "ggml-base.en.bin" // Small English model
             val modelAvailable = whisperBridge.isModelAvailable(context, modelName)
             
             if (modelAvailable) {
                 val modelSize = whisperBridge.getModelSize(context, modelName)
-                println("✅ [MAIN] Whisper model available: $modelName (${modelSize} bytes)")
+                Log.d(TAG, "✅ Whisper model available: $modelName (${modelSize} bytes)")
                 
                 val success = whisperBridge.initializeModel(context, modelName)
                 if (success) {
-                    println("✅ [MAIN] Whisper model initialized successfully")
+                    Log.d(TAG, "✅ Whisper model initialized successfully")
                     whisperBridge.setParameters("en", "transcribe")
                 } else {
-                    println("❌ [MAIN] Failed to initialize Whisper model")
+                    Log.e(TAG, "❌ Failed to initialize Whisper model")
                 }
             } else {
-                println("❌ [MAIN] Whisper model not available: $modelName")
-                println("🔧 [MAIN] Available models: ${whisperBridge.getAvailableModels(context)}")
+                Log.w(TAG, "❌ Whisper model not available: $modelName")
+                Log.d(TAG, "🔧 Available models: ${whisperBridge.getAvailableModels(context)}")
             }
         } catch (e: UnsatisfiedLinkError) {
-            println("⚠️ [MAIN] Native library not available: ${e.message}")
-            println("🔧 [MAIN] Using fallback transcription for demo")
+            Log.w(TAG, "⚠️ Native library not available: ${e.message}")
+            Log.d(TAG, "🔧 Using fallback transcription for demo")
         } catch (e: Exception) {
-            println("❌ [MAIN] Whisper initialization error: ${e.message}")
-            println("🔧 [MAIN] Using fallback transcription for demo")
+            Log.e(TAG, "❌ Whisper initialization error: ${e.message}")
+            Log.d(TAG, "🔧 Using fallback transcription for demo")
         }
         
         // Initialize ONNX translation model
-        println("🔧 [MAIN] Initializing ONNX translation...")
+        Log.d(TAG, "🔧 Initializing ONNX translation...")
         val translationModelBaseName = "translation_en_ar" // Base name for encoder-decoder models
         
         // Test model detection first
-        println("=== Testing Model Detection ===")
+        Log.d(TAG, "=== Testing Model Detection ===")
         val modelDetection = translationManager.testModelDetection()
         
         // Check for encoder-decoder models first
@@ -176,51 +184,56 @@ fun VideoPlayerSection(
         
         val completePairs = modelDetection["complete_pairs"] as? List<String> ?: emptyList()
         if (completePairs.contains(translationModelBaseName)) {
-            println("✅ [MAIN] Encoder-decoder pair found: $translationModelBaseName")
-            println("  - Encoder: $encoderModelName")
-            println("  - Decoder: $decoderModelName")
+            Log.d(TAG, "✅ Encoder-decoder pair found: $translationModelBaseName")
+            Log.d(TAG, "  - Encoder: $encoderModelName")
+            Log.d(TAG, "  - Decoder: $decoderModelName")
             
             val success = translationManager.loadModel(translationModelBaseName, "en", "ar")
             if (success) {
-                println("✅ [MAIN] ONNX encoder-decoder models loaded successfully")
+                Log.d(TAG, "✅ ONNX encoder-decoder models loaded successfully")
                 translationManager.setTranslationQuality(TranslationQuality.MEDIUM)
             } else {
-                println("❌ [MAIN] Failed to load ONNX encoder-decoder models")
+                Log.e(TAG, "❌ Failed to load ONNX encoder-decoder models")
             }
         } else {
             // Fallback to single model
             val singleModelName = "$translationModelBaseName.onnx"
             val singleModels = modelDetection["single_models"] as? List<String> ?: emptyList()
             if (singleModels.contains(singleModelName)) {
-                println("✅ [MAIN] Single model found: $singleModelName")
+                Log.d(TAG, "✅ Single model found: $singleModelName")
                 
                 val success = translationManager.loadModel(translationModelBaseName, "en", "ar")
                 if (success) {
-                    println("✅ [MAIN] ONNX single model loaded successfully")
+                    Log.d(TAG, "✅ ONNX single model loaded successfully")
                     translationManager.setTranslationQuality(TranslationQuality.MEDIUM)
                 } else {
-                    println("❌ [MAIN] Failed to load ONNX single model")
+                    Log.e(TAG, "❌ Failed to load ONNX single model")
                 }
             } else {
-                println("❌ [MAIN] No ONNX models found, using fallback translation")
+                Log.w(TAG, "❌ No ONNX models found, using fallback translation")
                 val success = translationManager.loadModel(translationModelBaseName, "en", "ar")
                 if (success) {
-                    println("✅ [MAIN] Fallback translation model loaded")
+                    Log.d(TAG, "✅ Fallback translation model loaded")
                 } else {
-                    println("❌ [MAIN] Failed to load fallback translation model")
+                    Log.e(TAG, "❌ Failed to load fallback translation model")
                 }
             }
         }
         
+        // Set up subtitle manager with translation manager
+        subtitleManager.setTranslationManager(translationManager)
+        subtitleManager.setSourceLanguage("en")
+        subtitleManager.setTargetLanguage("ar") // Default to Arabic for demo
+        
         // Start audio capture
         audioCaptureManager.startCapture()
-        println("✅ [MAIN] Audio capture started")
+        Log.d(TAG, "✅ Audio capture started")
         
         // Start subtitle processing
         subtitleManager.startProcessing()
-        println("✅ [MAIN] Subtitle processing started")
+        Log.d(TAG, "✅ Subtitle processing started")
         
-        println("🚀 [MAIN] STplayer initialization completed successfully!")
+        Log.d(TAG, "🚀 STplayer initialization completed successfully!")
     }
     
     // Cleanup on dispose
@@ -229,7 +242,7 @@ fun VideoPlayerSection(
             exoPlayer.release()
             audioCaptureManager.stopCapture()
             subtitleManager.stopProcessing()
-            println("🧹 [MAIN] STplayer cleanup completed")
+            Log.d(TAG, "🧹 STplayer cleanup completed")
         }
     }
     
@@ -313,13 +326,13 @@ class AudioCaptureManager {
             // TODO: Send to Whisper via JNI bridge for real transcription
             // TODO: Replace simulation with actual transcription result
             val transcription = whisperBridge.transcribeAudio(combinedAudio)
-            println("Whisper transcription: $transcription")
+            Log.d(TAG, "Whisper transcription: $transcription")
             
             // Process transcription through subtitle pipeline
             if (transcription.isNotEmpty() && !transcription.startsWith("[ERROR")) {
                 subtitleManager.processTranscription(transcription)
             } else if (transcription.startsWith("[ERROR")) {
-                println("Whisper transcription error: $transcription")
+                Log.e(TAG, "Whisper transcription error: $transcription")
                 // Fallback to simulation for demo purposes
                 subtitleManager.processTranscription("Audio captured, processing...")
             }
@@ -328,13 +341,13 @@ class AudioCaptureManager {
     
     fun startCapture() {
         isCapturing = true
-        println("Audio capture started")
+        Log.d(TAG, "Audio capture started")
     }
     
     fun stopCapture() {
         isCapturing = false
         pcmBuffer.clear()
-        println("Audio capture stopped")
+        Log.d(TAG, "Audio capture stopped")
     }
 }
 
@@ -424,6 +437,8 @@ fun VideoControlsSection(
     videoPlayerViewModel: VideoPlayerViewModel
 ) {
     var isPlaying by remember { mutableStateOf(false) }
+    var subtitleVisible by remember { mutableStateOf(true) }
+    var fontSize by remember { mutableStateOf(18) }
     
     Card(
         modifier = modifier.padding(16.dp),
@@ -431,37 +446,82 @@ fun VideoControlsSection(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            // Play/Pause Button
-            IconButton(
-                onClick = {
-                    isPlaying = !isPlaying
-                    // TODO: Implement actual play/pause functionality
-                }
+            // Main controls row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                // Play/Pause Button
+                IconButton(
+                    onClick = {
+                        isPlaying = !isPlaying
+                        // TODO: Implement actual play/pause functionality
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                // Seek Bar Placeholder
+                Slider(
+                    value = 0f,
+                    onValueChange = { /* TODO: Implement seek functionality */ },
+                    modifier = Modifier.weight(1f)
                 )
             }
             
-            // Seek Bar Placeholder
-            Slider(
-                value = 0f,
-                onValueChange = { /* TODO: Implement seek functionality */ },
-                modifier = Modifier.weight(1f)
-            )
+            // Subtitle settings row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Subtitle toggle
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Subtitles",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Switch(
+                        checked = subtitleVisible,
+                        onCheckedChange = { subtitleVisible = it }
+                    )
+                }
+                
+                // Font size slider
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Font: ${fontSize}",
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Slider(
+                        value = fontSize.toFloat(),
+                        onValueChange = { fontSize = it.toInt() },
+                        valueRange = 12f..32f,
+                        modifier = Modifier.width(100.dp)
+                    )
+                }
+            }
             
             // TODO: Add volume controls
             // TODO: Add fullscreen toggle
-            // TODO: Add subtitle toggle
         }
     }
 }
@@ -482,6 +542,7 @@ fun SubtitleOverlay(
     translationCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
+    // [CURSOR] Enhanced subtitle overlay with readable fonts for tablet/TV
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
@@ -494,7 +555,7 @@ fun SubtitleOverlay(
             Text(
                 text = subtitle,
                 color = Color.White,
-                fontSize = fontSize.sp,
+                fontSize = (fontSize + 4).sp, // Increase font size for better readability on tablet/TV
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -575,7 +636,7 @@ fun TranslationStatusIndicator(
                 fontSize = 12.sp
             )
             
-    Text(
+            Text(
                 text = "Status: ${if (isModelLoaded) "✅ Loaded" else "❌ Not Loaded"}",
                 color = if (isModelLoaded) Color.Green else Color.Red,
                 fontSize = 12.sp
