@@ -22,6 +22,13 @@ while true; do
     # Navigate to repo directory
     cd "$REPO_DIR" || { log_message "❌ Failed to navigate to repo directory"; exit 1; }
     
+    # Pull latest changes from remote
+    if git pull origin main >/dev/null 2>&1; then
+        log_message "✅ Successfully pulled latest changes from GitHub"
+    else
+        log_message "❌ Failed to pull changes from GitHub"
+    fi
+    
     # Check for changes
     if [ -n "$(git status -s)" ]; then
         log_message "🔄 Changes detected, syncing with GitHub..."
