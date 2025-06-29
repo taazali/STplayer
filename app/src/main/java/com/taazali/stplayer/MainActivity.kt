@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun STplayerApp() {
     val videoPlayerViewModel: VideoPlayerViewModel = viewModel()
