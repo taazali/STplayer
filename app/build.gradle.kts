@@ -51,7 +51,7 @@ android {
             path = file("src/main/cpp/CMakeLists.txt")
             version = "3.28.3"
             // Specify Ninja path for cloud environment
-            setArguments(listOf("-DCMAKE_MAKE_PROGRAM=/usr/local/bin/ninja"))
+            arguments("-DCMAKE_MAKE_PROGRAM=/usr/local/bin/ninja")
         }
     }
     
