@@ -14,8 +14,11 @@ fi
 # Navigate to project directory
 cd /home/user/AndroidStudioProjects/STplayer || { echo "Failed to navigate to project directory"; exit 1; }
 
+# Pull latest changes from remote
+tput setaf 2; echo "Pulling latest changes from GitHub..."; tput sgr0
+git pull origin main --rebase
+
 # Add all changed files
-$ANDROID_STUDIO_PROJECTS_DIR/STplayer
 tput setaf 2; echo "Adding all changed files..."; tput sgr0
 git add .
 
