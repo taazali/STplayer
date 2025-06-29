@@ -64,7 +64,7 @@ extern "C" {
  * @return true if initialization successful, false otherwise
  */
 JNIEXPORT jboolean JNICALL
-Java_com_taazali_stplayer_WhisperBridge_initializeModel(JNIEnv *env, jobject thiz, jobject assetManager, jstring modelName) {
+Java_com_taazali_stplayer_WhisperBridge_nativeInitializeModel(JNIEnv *env, jobject thiz, jobject assetManager, jstring modelName) {
     (void)thiz; // Suppress unused parameter warning
     const char* model_name = env->GetStringUTFChars(modelName, 0);
     
@@ -122,7 +122,7 @@ Java_com_taazali_stplayer_WhisperBridge_initializeModel(JNIEnv *env, jobject thi
  * @return Transcribed text from the audio
  */
 JNIEXPORT jstring JNICALL
-Java_com_taazali_stplayer_WhisperBridge_transcribeAudio(JNIEnv *env, jobject thiz, jbyteArray pcmBuffer) {
+Java_com_taazali_stplayer_WhisperBridge_transcribeAudioNative(JNIEnv *env, jobject thiz, jbyteArray pcmBuffer) {
     (void)thiz; // Suppress unused parameter warning
     if (!whisper_state.model_loaded) {
         LOGE("Whisper model not loaded");

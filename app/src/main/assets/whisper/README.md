@@ -1,6 +1,38 @@
 # Whisper Models Directory
 
-This directory contains Whisper.cpp model files for real-time audio transcription.
+This directory should contain Whisper.cpp model files for real-time transcription.
+
+## Required Model File
+
+**For the app to work properly, you need to add a Whisper model file:**
+
+- **File name:** `ggml-base.en.bin`
+- **Size:** ~142 MB
+- **Source:** [Whisper.cpp models](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
+
+## How to Get the Model
+
+1. **Download from Hugging Face:**
+   ```bash
+   wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
+   ```
+
+2. **Place in this directory:** `app/src/main/assets/whisper/ggml-base.en.bin`
+
+## Alternative Models
+
+You can also use other Whisper models:
+- `ggml-tiny.en.bin` (~39 MB) - Fastest, lower accuracy
+- `ggml-small.en.bin` (~244 MB) - Better accuracy
+- `ggml-medium.en.bin` (~769 MB) - Best accuracy
+
+## Current Status
+
+⚠️ **No model file present** - The app will use fallback transcription until a model is added.
+
+## Model Integration
+
+The app will automatically detect and load the model file when it's placed in this directory.
 
 ## Model Files
 

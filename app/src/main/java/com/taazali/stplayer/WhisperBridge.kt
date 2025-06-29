@@ -139,7 +139,8 @@ class WhisperBridge {
     external fun getStatus(): String
     
     // Native method declarations
-    private external fun initializeModelNative(assetManager: AssetManager, modelName: String): Boolean
+    private external fun nativeInitializeModel(assetManager: AssetManager, modelName: String): Boolean
+    private external fun transcribeAudioNative(audioData: ByteArray): String
     
     /**
      * Get available Whisper models from assets
