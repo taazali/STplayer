@@ -1,30 +1,22 @@
 package com.taazali.stplayer
 
+// Add all necessary imports
 import android.content.Context
-import android.content.res.AssetManager
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.IntBuffer
-import java.nio.LongBuffer
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicLong
-// import com.microsoft.onnxruntime.*
 
-/**
- * Manages ONNX-based translation for real-time subtitle translation
- * 
- * This class handles:
- * - Loading ONNX translation models from assets
- * - Translating text between source and target languages
- * - Managing translation quality and options
- * - Integration with the subtitle pipeline
- */
-class TranslationManager(private val context: Context) {
+// Define the TAG constant at the top of the file
+private const val TAG = "TranslationManager"
+
+class TranslationManager(context: Context) {
     
     // Translation state
     private val _isModelLoaded = MutableStateFlow(false)
@@ -53,9 +45,11 @@ class TranslationManager(private val context: Context) {
     private val totalInferenceTime = AtomicLong(0)
     private val totalMemoryUsage = AtomicLong(0)
     
+    private val appContext = context.applicationContext
+    
     init {
         // initializeOnnxRuntime()
-        println("🔧 [TRANSLATION] TranslationManager initialized (ONNX disabled)")
+        Log.d(TAG, "TranslationManager initialized (ONNX disabled)")
     }
     
     /**
@@ -64,10 +58,10 @@ class TranslationManager(private val context: Context) {
     private fun initializeOnnxRuntime() {
         try {
             // onnxEnvironment = OrtEnvironment.getEnvironment()
-            println("✅ [TRANSLATION] ONNX Runtime initialized successfully")
+            Log.d(TAG, "ONNX Runtime initialized successfully")
         } catch (e: Exception) {
-            println("❌ [TRANSLATION] Failed to initialize ONNX Runtime: ${e.message}")
-            println("🔧 [TRANSLATION] Using fallback translation mode")
+            Log.e(TAG, "Failed to initialize ONNX Runtime: ${e.message}")
+            Log.d(TAG, "Using fallback translation mode")
         }
     }
     
@@ -81,18 +75,18 @@ class TranslationManager(private val context: Context) {
      * @return true if models loaded successfully
      */
     fun loadModel(modelName: String, sourceLanguage: String, targetLanguage: String): Boolean {
-        println("🔧 [TRANSLATION] Starting model loading process...")
-        println("🔧 [TRANSLATION] Model base name: $modelName")
-        println("🔧 [TRANSLATION] Language pair: $sourceLanguage → $targetLanguage")
+        Log.d(TAG, "Starting model loading process...")
+        Log.d(TAG, "Model base name: $modelName")
+        Log.d(TAG, "Language pair: $sourceLanguage → $targetLanguage")
         
         try {
             // ONNX temporarily disabled
-            println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback mode")
+            Log.d(TAG, "ONNX Runtime disabled, using fallback mode")
             return loadFallbackModel(modelName, sourceLanguage, targetLanguage)
             
             /*
             if (onnxEnvironment == null) {
-                println("❌ [TRANSLATION] ONNX Runtime not initialized, using fallback mode")
+                Log.e(TAG, "ONNX Runtime not initialized, using fallback mode")
                 return loadFallbackModel(modelName, sourceLanguage, targetLanguage)
             }
             
@@ -100,49 +94,49 @@ class TranslationManager(private val context: Context) {
             val encoderModelName = "${modelName}_encoder_int8.onnx"
             val decoderModelName = "${modelName}_decoder_int8.onnx"
             
-            println("🔧 [TRANSLATION] Looking for encoder-decoder models:")
-            println("  - Encoder: $encoderModelName")
-            println("  - Decoder: $decoderModelName")
+            Log.d(TAG, "Looking for encoder-decoder models:")
+            Log.d(TAG, "  - Encoder: $encoderModelName")
+            Log.d(TAG, "  - Decoder: $decoderModelName")
             
             val encoderFile = extractModelFromAssets(encoderModelName)
             val decoderFile = extractModelFromAssets(decoderModelName)
             
             if (encoderFile != null && decoderFile != null) {
-                println("✅ [TRANSLATION] Both encoder and decoder files found")
-                println("  - Encoder size: ${encoderFile.length()} bytes")
-                println("  - Decoder size: ${decoderFile.length()} bytes")
+                Log.d(TAG, "Both encoder and decoder files found")
+                Log.d(TAG, "  - Encoder size: ${encoderFile.length()} bytes")
+                Log.d(TAG, "  - Decoder size: ${decoderFile.length()} bytes")
                 
                 // Load encoder-decoder architecture
                 return loadEncoderDecoderModels(encoderFile, decoderFile, sourceLanguage, targetLanguage)
             } else {
-                println("⚠️ [TRANSLATION] Encoder-decoder files not found:")
-                println("  - Encoder file exists: ${encoderFile != null}")
-                println("  - Decoder file exists: ${decoderFile != null}")
+                Log.w(TAG, "Encoder-decoder files not found:")
+                Log.d(TAG, "  - Encoder file exists: ${encoderFile != null}")
+                Log.d(TAG, "  - Decoder file exists: ${decoderFile != null}")
             }
             
             // Fallback to single model
             val singleModelName = "$modelName.onnx"
-            println("🔧 [TRANSLATION] Trying single model fallback: $singleModelName")
+            Log.d(TAG, "Trying single model fallback: $singleModelName")
             
             val singleModelFile = extractModelFromAssets(singleModelName)
             
             if (singleModelFile != null) {
-                println("✅ [TRANSLATION] Single model file found: ${singleModelFile.length()} bytes")
+                Log.d(TAG, "Single model file found: ${singleModelFile.length()} bytes")
                 return loadSingleModel(singleModelFile, sourceLanguage, targetLanguage)
             }
             
-            println("❌ [TRANSLATION] No translation models found for: $modelName")
-            println("❌ [TRANSLATION] Expected files:")
-            println("  - $encoderModelName")
-            println("  - $decoderModelName")
-            println("  - $singleModelName")
+            Log.e(TAG, "No translation models found for: $modelName")
+            Log.e(TAG, "Expected files:")
+            Log.e(TAG, "  - $encoderModelName")
+            Log.e(TAG, "  - $decoderModelName")
+            Log.e(TAG, "  - $singleModelName")
             
             // Fallback to demo mode
             return loadFallbackModel(modelName, sourceLanguage, targetLanguage)
             */
             
         } catch (e: Exception) {
-            println("❌ [TRANSLATION] Failed to load translation models: ${e.message}")
+            Log.e(TAG, "Failed to load translation models: ${e.message}")
             e.printStackTrace()
             return loadFallbackModel(modelName, sourceLanguage, targetLanguage)
         }
@@ -154,19 +148,19 @@ class TranslationManager(private val context: Context) {
     private fun loadFallbackModel(modelName: String, sourceLanguage: String, targetLanguage: String): Boolean {
         try {
             // Initialize tokenizer for the language pair
-            println("🔧 [TRANSLATION] Initializing fallback tokenizer for $sourceLanguage → $targetLanguage")
+            Log.d(TAG, "Initializing fallback tokenizer for $sourceLanguage → $targetLanguage")
             tokenizer = TranslationTokenizer(sourceLanguage, targetLanguage)
             
             _isModelLoaded.value = true
             _currentModel.value = "fallback_${modelName}"
             
-            println("✅ [TRANSLATION] Fallback translation model loaded successfully")
-            println("✅ [TRANSLATION] Translation: $sourceLanguage → $targetLanguage")
+            Log.d(TAG, "Fallback translation model loaded successfully")
+            Log.d(TAG, "Translation: $sourceLanguage → $targetLanguage")
             
             return true
             
         } catch (e: Exception) {
-            println("❌ [TRANSLATION] Failed to load fallback model: ${e.message}")
+            Log.e(TAG, "Failed to load fallback model: ${e.message}")
             e.printStackTrace()
             _isModelLoaded.value = false
             _currentModel.value = null
@@ -183,51 +177,51 @@ class TranslationManager(private val context: Context) {
         sourceLanguage: String, 
         targetLanguage: String
     ): Boolean {
-        println("🔧 [TRANSLATION] Loading encoder-decoder architecture...")
+        Log.d(TAG, "Loading encoder-decoder architecture...")
         
         // ONNX temporarily disabled
-        println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback mode")
+        Log.d(TAG, "ONNX Runtime disabled, using fallback mode")
         return loadFallbackModel("${encoderFile.nameWithoutExtension}_${decoderFile.nameWithoutExtension}", sourceLanguage, targetLanguage)
         
         /*
         try {
             val sessionOptions = createSessionOptions()
-            println("🔧 [TRANSLATION] Session options configured:")
-            println("  - Intra-op threads: ${sessionOptions.intraOpNumThreads}")
-            println("  - Inter-op threads: ${sessionOptions.interOpNumThreads}")
-            println("  - Execution mode: ${sessionOptions.executionMode}")
+            Log.d(TAG, "Session options configured:")
+            Log.d(TAG, "  - Intra-op threads: ${sessionOptions.intraOpNumThreads}")
+            Log.d(TAG, "  - Inter-op threads: ${sessionOptions.interOpNumThreads}")
+            Log.d(TAG, "  - Execution mode: ${sessionOptions.executionMode}")
             
             // Load encoder model
-            println("🔧 [TRANSLATION] Loading encoder model: ${encoderFile.name}")
+            Log.d(TAG, "Loading encoder model: ${encoderFile.name}")
             val encoderStartTime = System.currentTimeMillis()
             encoderSession = onnxEnvironment!!.createSession(encoderFile.absolutePath, sessionOptions)
             val encoderLoadTime = System.currentTimeMillis() - encoderStartTime
-            println("✅ [TRANSLATION] Encoder model loaded in ${encoderLoadTime}ms")
+            Log.d(TAG, "Encoder model loaded in ${encoderLoadTime}ms")
             
             // Load decoder model
-            println("🔧 [TRANSLATION] Loading decoder model: ${decoderFile.name}")
+            Log.d(TAG, "Loading decoder model: ${decoderFile.name}")
             val decoderStartTime = System.currentTimeMillis()
             decoderSession = onnxEnvironment!!.createSession(decoderFile.absolutePath, sessionOptions)
             val decoderLoadTime = System.currentTimeMillis() - decoderStartTime
-            println("✅ [TRANSLATION] Decoder model loaded in ${decoderLoadTime}ms")
+            Log.d(TAG, "Decoder model loaded in ${decoderLoadTime}ms")
             
             // Initialize tokenizer for the language pair
-            println("🔧 [TRANSLATION] Initializing tokenizer for $sourceLanguage → $targetLanguage")
+            Log.d(TAG, "Initializing tokenizer for $sourceLanguage → $targetLanguage")
             tokenizer = TranslationTokenizer(sourceLanguage, targetLanguage)
             
             _isModelLoaded.value = true
             _currentModel.value = "${encoderFile.nameWithoutExtension}_${decoderFile.nameWithoutExtension}"
             
             val totalLoadTime = encoderLoadTime + decoderLoadTime
-            println("✅ [TRANSLATION] Encoder-decoder models loaded successfully in ${totalLoadTime}ms")
-            println("✅ [TRANSLATION] Translation: $sourceLanguage → $targetLanguage")
-            println("✅ [TRANSLATION] Encoder path: ${encoderFile.absolutePath}")
-            println("✅ [TRANSLATION] Decoder path: ${decoderFile.absolutePath}")
+            Log.d(TAG, "Encoder-decoder models loaded successfully in ${totalLoadTime}ms")
+            Log.d(TAG, "Translation: $sourceLanguage → $targetLanguage")
+            Log.d(TAG, "Encoder path: ${encoderFile.absolutePath}")
+            Log.d(TAG, "Decoder path: ${decoderFile.absolutePath}")
             
             return true
             
         } catch (e: Exception) {
-            println("❌ [TRANSLATION] Failed to load encoder-decoder models: ${e.message}")
+            Log.e(TAG, "Failed to load encoder-decoder models: ${e.message}")
             e.printStackTrace()
             encoderSession?.close()
             decoderSession?.close()
@@ -247,7 +241,7 @@ class TranslationManager(private val context: Context) {
         targetLanguage: String
     ): Boolean {
         // ONNX temporarily disabled
-        println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback mode")
+        Log.d(TAG, "ONNX Runtime disabled, using fallback mode")
         return loadFallbackModel(modelFile.nameWithoutExtension, sourceLanguage, targetLanguage)
         
         /*
@@ -264,14 +258,14 @@ class TranslationManager(private val context: Context) {
             _isModelLoaded.value = true
             _currentModel.value = modelFile.name
             
-            println("✅ [TRANSLATION] Single model loaded successfully: ${modelFile.name}")
-            println("✅ [TRANSLATION] Translation: $sourceLanguage → $targetLanguage")
-            println("✅ [TRANSLATION] Model path: ${modelFile.absolutePath}")
+            Log.d(TAG, "Single model loaded successfully: ${modelFile.name}")
+            Log.d(TAG, "Translation: $sourceLanguage → $targetLanguage")
+            Log.d(TAG, "Model path: ${modelFile.absolutePath}")
             
             return true
             
         } catch (e: Exception) {
-            println("❌ [TRANSLATION] Failed to load single model: ${e.message}")
+            Log.e(TAG, "Failed to load single model: ${e.message}")
             e.printStackTrace()
             encoderSession?.close()
             encoderSession = null
@@ -296,19 +290,19 @@ class TranslationManager(private val context: Context) {
                 sessionOptions.intraOpNumThreads = 1
                 sessionOptions.interOpNumThreads = 1
                 sessionOptions.executionMode = OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL
-                println("🔧 [TRANSLATION] Fast mode: 1 thread, parallel execution")
+                Log.d(TAG, "Fast mode: 1 thread, parallel execution")
             }
             TranslationQuality.MEDIUM -> {
                 sessionOptions.intraOpNumThreads = 2
                 sessionOptions.interOpNumThreads = 1
                 sessionOptions.executionMode = OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL
-                println("🔧 [TRANSLATION] Medium mode: 2 threads, parallel execution")
+                Log.d(TAG, "Medium mode: 2 threads, parallel execution")
             }
             TranslationQuality.HIGH -> {
                 sessionOptions.intraOpNumThreads = 4
                 sessionOptions.interOpNumThreads = 2
                 sessionOptions.executionMode = OrtSession.SessionOptions.ExecutionMode.ORT_PARALLEL
-                println("🔧 [TRANSLATION] High mode: 4 threads, parallel execution")
+                Log.d(TAG, "High mode: 4 threads, parallel execution")
             }
         }
         
@@ -321,17 +315,17 @@ class TranslationManager(private val context: Context) {
      */
     private fun extractModelFromAssets(modelName: String): File? {
         try {
-            val cacheDir = context.cacheDir
+            val cacheDir = appContext.cacheDir
             val modelFile = File(cacheDir, modelName)
             
             // Check if model already exists in cache
             if (modelFile.exists()) {
-                println("Using cached model: ${modelFile.absolutePath}")
+                Log.d(TAG, "Using cached model: ${modelFile.absolutePath}")
                 return modelFile
             }
             
             // Extract from assets
-            val assetManager = context.assets
+            val assetManager = appContext.assets
             val inputStream = assetManager.open("translation/$modelName")
             val outputStream = FileOutputStream(modelFile)
             
@@ -339,11 +333,11 @@ class TranslationManager(private val context: Context) {
             inputStream.close()
             outputStream.close()
             
-            println("Model extracted to cache: ${modelFile.absolutePath}")
+            Log.d(TAG, "Model extracted to cache: ${modelFile.absolutePath}")
             return modelFile
             
         } catch (e: IOException) {
-            println("Failed to extract model from assets: ${e.message}")
+            Log.e(TAG, "Failed to extract model from assets: ${e.message}")
             return null
         }
     }
@@ -358,7 +352,7 @@ class TranslationManager(private val context: Context) {
      */
     fun translate(text: String, sourceLanguage: String, targetLanguage: String): String {
         if (!_isModelLoaded.value) {
-            println("❌ [TRANSLATION] No translation model loaded")
+            Log.e(TAG, "No translation model loaded")
             return getFallbackTranslation(text, targetLanguage)
         }
         
@@ -366,17 +360,17 @@ class TranslationManager(private val context: Context) {
             return text
         }
         
-        println("🔧 [TRANSLATION] Translating: '$text' ($sourceLanguage → $targetLanguage)")
+        Log.d(TAG, "Translating: '$text' ($sourceLanguage → $targetLanguage)")
         
         val startTime = System.currentTimeMillis()
         
         try {
             // Tokenize input text
             val inputTokens = tokenizer?.tokenize(text) ?: intArrayOf()
-            println("🔧 [TRANSLATION] Input tokens: ${inputTokens.contentToString()}")
+            Log.d(TAG, "Input tokens: ${inputTokens.contentToString()}")
             
             // ONNX temporarily disabled
-            println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback translation")
+            Log.d(TAG, "ONNX Runtime disabled, using fallback translation")
             val translatedText = translateWithFallback(inputTokens)
             
             val translationTime = System.currentTimeMillis() - startTime
@@ -390,18 +384,18 @@ class TranslationManager(private val context: Context) {
             val memoryUsage = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()
             totalMemoryUsage.addAndGet(memoryUsage)
             
-            println("✅ [TRANSLATION] Translation completed in ${translationTime}ms")
-            println("✅ [TRANSLATION] $sourceLanguage → $targetLanguage: '$text' → '$translatedText'")
-            println("✅ [TRANSLATION] Memory usage: ${memoryUsage / 1024 / 1024}MB")
+            Log.d(TAG, "Translation completed in ${translationTime}ms")
+            Log.d(TAG, "$sourceLanguage → $targetLanguage: '$text' → '$translatedText'")
+            Log.d(TAG, "Memory usage: ${memoryUsage / 1024 / 1024}MB")
             
             return translatedText
             
         } catch (e: Exception) {
-            println("❌ [TRANSLATION] Translation failed: ${e.message}")
+            Log.e(TAG, "Translation failed: ${e.message}")
             e.printStackTrace()
             
             // Fallback to placeholder translation for demo
-            println("🔧 [TRANSLATION] Using fallback translation")
+            Log.d(TAG, "Using fallback translation")
             return getFallbackTranslation(text, targetLanguage)
         }
     }
@@ -411,14 +405,14 @@ class TranslationManager(private val context: Context) {
      */
     private fun translateWithEncoderDecoder(inputTokens: IntArray): String {
         // ONNX temporarily disabled
-        println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback translation")
+        Log.d(TAG, "ONNX Runtime disabled, using fallback translation")
         return translateWithFallback(inputTokens)
         
         /*
-        println("🔧 [TRANSLATION] Starting encoder-decoder translation...")
+        Log.d(TAG, "Starting encoder-decoder translation...")
         
         // Step 1: Encode input tokens
-        println("🔧 [TRANSLATION] Step 1: Encoding input tokens...")
+        Log.d(TAG, "Step 1: Encoding input tokens...")
         val encodeStartTime = System.currentTimeMillis()
         
         val inputShape = longArrayOf(1, inputTokens.size.toLong())
@@ -429,7 +423,7 @@ class TranslationManager(private val context: Context) {
         )
         
         val encoderInputs = mapOf("input_ids" to inputTensor)
-        println("🔧 [TRANSLATION] Running encoder inference...")
+        Log.d(TAG, "Running encoder inference...")
         val encoderOutputs = encoderSession!!.run(encoderInputs)
         
         // Get encoder output (usually "last_hidden_state")
@@ -437,11 +431,11 @@ class TranslationManager(private val context: Context) {
         val encoderOutputShape = encoderOutput.info.shape
         
         val encodeTime = System.currentTimeMillis() - encodeStartTime
-        println("✅ [TRANSLATION] Encoder completed in ${encodeTime}ms")
-        println("✅ [TRANSLATION] Encoder output shape: ${encoderOutputShape.joinToString(", ")}")
+        Log.d(TAG, "Encoder completed in ${encodeTime}ms")
+        Log.d(TAG, "Encoder output shape: ${encoderOutputShape.joinToString(", ")}")
         
         // Step 2: Decode to target language
-        println("🔧 [TRANSLATION] Step 2: Decoding to target language...")
+        Log.d(TAG, "Step 2: Decoding to target language...")
         val decodeStartTime = System.currentTimeMillis()
         
         val decoderInputs = mutableMapOf<String, OnnxTensor>()
@@ -459,7 +453,7 @@ class TranslationManager(private val context: Context) {
         )
         decoderInputs["input_ids"] = decoderInputTensor
         
-        println("🔧 [TRANSLATION] Running decoder inference...")
+        Log.d(TAG, "Running decoder inference...")
         val decoderOutputs = decoderSession!!.run(decoderInputs)
         
         // Get decoder output (usually "logits")
@@ -467,16 +461,16 @@ class TranslationManager(private val context: Context) {
         val decoderOutputShape = decoderOutput.info.shape
         
         val decodeTime = System.currentTimeMillis() - decodeStartTime
-        println("✅ [TRANSLATION] Decoder completed in ${decodeTime}ms")
-        println("✅ [TRANSLATION] Decoder output shape: ${decoderOutputShape.joinToString(", ")}")
+        Log.d(TAG, "Decoder completed in ${decodeTime}ms")
+        Log.d(TAG, "Decoder output shape: ${decoderOutputShape.joinToString(", ")}")
         
         // Decode output tokens to text
-        println("🔧 [TRANSLATION] Decoding output tokens to text...")
+        Log.d(TAG, "Decoding output tokens to text...")
         val result = tokenizer!!.decode(decoderOutput.buffer, decoderOutputShape)
         
         val totalTime = encodeTime + decodeTime
-        println("✅ [TRANSLATION] Encoder-decoder translation completed in ${totalTime}ms")
-        println("✅ [TRANSLATION] Result: '$result'")
+        Log.d(TAG, "Encoder-decoder translation completed in ${totalTime}ms")
+        Log.d(TAG, "Result: '$result'")
         
         return result
         */
@@ -487,7 +481,7 @@ class TranslationManager(private val context: Context) {
      */
     private fun translateWithSingleModel(inputTokens: IntArray): String {
         // ONNX temporarily disabled
-        println("🔧 [TRANSLATION] ONNX Runtime disabled, using fallback translation")
+        Log.d(TAG, "ONNX Runtime disabled, using fallback translation")
         return translateWithFallback(inputTokens)
         
         /*
@@ -508,7 +502,7 @@ class TranslationManager(private val context: Context) {
         val outputBuffer = outputTensor.buffer
         val outputShape = outputTensor.info.shape
         
-        println("✅ [TRANSLATION] Single model output shape: ${outputShape.joinToString(", ")}")
+        Log.d(TAG, "Single model output shape: ${outputShape.joinToString(", ")}")
         
         // Decode output tokens to text
         return tokenizer!!.decode(outputBuffer, outputShape)
@@ -520,7 +514,7 @@ class TranslationManager(private val context: Context) {
      */
     private fun translateWithFallback(inputTokens: IntArray): String {
         // Fallback translation - just return a placeholder for now
-        println("🔧 [TRANSLATION] Using fallback translation")
+        Log.d(TAG, "Using fallback translation")
         return "[TRANSLATED] ${tokenizer?.decode(inputTokens) ?: "Translation placeholder"}"
     }
     
@@ -531,12 +525,12 @@ class TranslationManager(private val context: Context) {
      */
     fun setTranslationQuality(quality: TranslationQuality) {
         _translationQuality.value = quality
-        println("Translation quality set to: $quality")
+        Log.d(TAG, "Translation quality set to: $quality")
         
         // Reload model with new quality settings if already loaded
         val currentModel = _currentModel.value
         if (currentModel != null && _isModelLoaded.value) {
-            println("Reloading model with new quality settings...")
+            Log.d(TAG, "Reloading model with new quality settings...")
             unloadModel()
             loadModel(currentModel, "en", "ar") // Assuming English to Arabic for now
         }
@@ -557,10 +551,10 @@ class TranslationManager(private val context: Context) {
             _isModelLoaded.value = false
             _currentModel.value = null
             
-            println("Translation models unloaded successfully")
+            Log.d(TAG, "Translation models unloaded successfully")
             
         } catch (e: Exception) {
-            println("Failed to unload models: ${e.message}")
+            Log.e(TAG, "Failed to unload models: ${e.message}")
         }
     }
     
@@ -571,19 +565,19 @@ class TranslationManager(private val context: Context) {
      */
     fun getAvailableModels(): List<String> {
         return try {
-            val assetManager = context.assets
+            val assetManager = appContext.assets
             val translationDir = "translation"
             if (assetManager.list(translationDir) != null) {
                 val models = assetManager.list(translationDir)!!.filter { it.endsWith(".onnx") }
-                println("Found ${models.size} ONNX models in assets/translation/:")
-                models.forEach { println("  - $it") }
+                Log.d(TAG, "Found ${models.size} ONNX models in assets/translation/:")
+                models.forEach { model -> Log.d(TAG, "  - $model") }
                 models
             } else {
-                println("No translation directory found in assets")
+                Log.e(TAG, "No translation directory found in assets")
                 emptyList()
             }
         } catch (e: Exception) {
-            println("Failed to list translation models: ${e.message}")
+            Log.e(TAG, "Failed to list translation models: ${e.message}")
             emptyList()
         }
     }
@@ -618,12 +612,12 @@ class TranslationManager(private val context: Context) {
         }
         result["complete_pairs"] = pairs
         
-        println("Model Detection Results:")
-        println("  Total models: ${result["total_models"]}")
-        println("  Encoder models: ${result["encoder_models"]}")
-        println("  Decoder models: ${result["decoder_models"]}")
-        println("  Single models: ${result["single_models"]}")
-        println("  Complete pairs: ${result["complete_pairs"]}")
+        Log.d(TAG, "Model Detection Results:")
+        Log.d(TAG, "  Total models: ${result["total_models"]}")
+        Log.d(TAG, "  Encoder models: ${result["encoder_models"]}")
+        Log.d(TAG, "  Decoder models: ${result["decoder_models"]}")
+        Log.d(TAG, "  Single models: ${result["single_models"]}")
+        Log.d(TAG, "  Complete pairs: ${result["complete_pairs"]}")
         
         return result
     }
