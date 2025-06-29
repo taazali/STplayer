@@ -173,7 +173,8 @@ fun VideoPlayerSection(
         val encoderModelName = "${translationModelBaseName}_encoder_int8.onnx"
         val decoderModelName = "${translationModelBaseName}_decoder_int8.onnx"
         
-        if (modelDetection["complete_pairs"] as List<String>).contains(translationModelBaseName)) {
+        val completePairs = modelDetection["complete_pairs"] as? List<String> ?: emptyList()
+        if (completePairs.contains(translationModelBaseName)) {
             println("✅ [MAIN] Encoder-decoder pair found: $translationModelBaseName")
             println("  - Encoder: $encoderModelName")
             println("  - Decoder: $decoderModelName")
@@ -188,7 +189,8 @@ fun VideoPlayerSection(
         } else {
             // Fallback to single model
             val singleModelName = "$translationModelBaseName.onnx"
-            if ((modelDetection["single_models"] as List<String>).contains(singleModelName)) {
+            val singleModels = modelDetection["single_models"] as? List<String> ?: emptyList()
+            if (singleModels.contains(singleModelName)) {
                 println("✅ [MAIN] Single model found: $singleModelName")
                 
                 val success = translationManager.loadModel(translationModelBaseName, "en", "ar")
@@ -440,30 +442,18 @@ class AudioCaptureManager {
     private val chunkSize = sampleRate * 2 * chunkDurationMs / 1000 // 16-bit samples
     
     fun createAudioSink(subtitleManager: SubtitleManager, whisperBridge: WhisperBridge): AudioSink {
-        return object : DefaultAudioSink.Builder().build() {
-            override fun handleBuffer(
-                buffer: ByteBuffer,
-                presentationTimeUs: Long,
-                encodedAccessUnitCount: Int
-            ): Boolean {
-                // Capture PCM data for transcription
-                if (isCapturing) {
-                    val pcmData = ByteArray(buffer.remaining())
-                    buffer.get(pcmData)
-                    pcmBuffer.offer(pcmData)
-                    
-                    // Process audio data in chunks for transcription
-                    if (pcmBuffer.size >= 10) { // Process every 10 chunks
-                        processAudioChunk(subtitleManager, whisperBridge)
-                    }
-                }
-                
-                return super.handleBuffer(buffer, presentationTimeUs, encodedAccessUnitCount)
-            }
+        return CustomAudioSink(subtitleManager, whisperBridge, this)
+    }
+    
+    fun addPcmData(data: ByteArray) {
+        if (isCapturing) {
+            pcmBuffer.offer(data)
         }
     }
     
-    private fun processAudioChunk(subtitleManager: SubtitleManager, whisperBridge: WhisperBridge) {
+    fun getBufferSize(): Int = pcmBuffer.size
+    
+    fun processAudioChunk(subtitleManager: SubtitleManager, whisperBridge: WhisperBridge) {
         val audioData = mutableListOf<ByteArray>()
         repeat(10) {
             pcmBuffer.poll()?.let { audioData.add(it) }
@@ -498,6 +488,32 @@ class AudioCaptureManager {
         isCapturing = false
         pcmBuffer.clear()
         println("Audio capture stopped")
+    }
+}
+
+// Custom AudioSink implementation for capturing PCM data
+class CustomAudioSink(
+    private val subtitleManager: SubtitleManager,
+    private val whisperBridge: WhisperBridge,
+    private val audioCaptureManager: AudioCaptureManager
+) : DefaultAudioSink.Builder().build() {
+    
+    override fun handleBuffer(
+        buffer: ByteBuffer,
+        presentationTimeUs: Long,
+        encodedAccessUnitCount: Int
+    ): Boolean {
+        // Capture PCM data for transcription
+        val pcmData = ByteArray(buffer.remaining())
+        buffer.get(pcmData)
+        audioCaptureManager.addPcmData(pcmData)
+        
+        // Process audio data in chunks for transcription
+        if (audioCaptureManager.getBufferSize() >= 10) { // Process every 10 chunks
+            audioCaptureManager.processAudioChunk(subtitleManager, whisperBridge)
+        }
+        
+        return super.handleBuffer(buffer, presentationTimeUs, encodedAccessUnitCount)
     }
 }
 
